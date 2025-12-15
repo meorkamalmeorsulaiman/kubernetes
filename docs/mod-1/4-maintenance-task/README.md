@@ -527,3 +527,66 @@ ctrl-01   Ready    control-plane   5h36m   v1.34.3
 wrk-01    Ready    <none>          5h27m   v1.33.7
 ```
 
+## Upgrade worker node
+
+1. Updade apt source list
+2. Upgrade the `kubeadm`
+3. Proceed the upgrade `sudo kubeadm upgrade node`
+```
+ansible@WRK-01:~$ sudo kubeadm upgrade node
+[upgrade] Reading configuration from the "kubeadm-config" ConfigMap in namespace "kube-system"...
+[upgrade] Use 'kubeadm init phase upload-config kubeadm --config your-config-file' to re-upload it.
+[upgrade/preflight] Running pre-flight checks
+[upgrade/preflight] Skipping prepull. Not a control plane node.
+[upgrade/control-plane] Skipping phase. Not a control plane node.
+[upgrade/kubeconfig] Skipping phase. Not a control plane node.
+W1215 14:02:27.311209  127163 postupgrade.go:116] Using temporary directory /etc/kubernetes/tmp/kubeadm-kubelet-config1295409584 for kubelet config. To override it set the environment variable KUBEADM_UPGRADE_DRYRUN_DIR
+[upgrade] Backing up kubelet config file to /etc/kubernetes/tmp/kubeadm-kubelet-config1295409584/config.yaml
+[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/instance-config.yaml"
+[patches] Applied patch of type "application/strategic-merge-patch+json" to target "kubeletconfiguration"
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
+[upgrade/kubelet-config] The kubelet configuration for this node was successfully upgraded!
+[upgrade/addon] Skipping the addon/coredns phase. Not a control plane node.
+[upgrade/addon] Skipping the addon/kube-proxy phase. Not a control plane node.
+ansible@WRK-01:~$ kubectl drain <node-to-drain^C--ignore-daemonsets
+```
+4. Then drain before upgrading `kubelet` and `kubectl` using `kubectl drain wrk-01 --ignore-daemonsets --delete-emptydir-data`
+```
+ansible@CTRL-01:~$ kubectl drain wrk-01 --ignore-daemonsets --delete-emptydir-data
+node/wrk-01 already cordoned
+Warning: ignoring DaemonSet-managed Pods: kube-system/calico-node-g9rr5, kube-system/kube-proxy-kgbt8
+evicting pod kube-system/metrics-server-6b77496796-lh5lp
+evicting pod kube-system/coredns-66bc5c9577-t9hb7
+evicting pod kube-system/coredns-66bc5c9577-z5b2p
+evicting pod kube-system/calico-kube-controllers-7498b9bb4c-gn6tq
+pod/calico-kube-controllers-7498b9bb4c-gn6tq evicted
+pod/metrics-server-6b77496796-lh5lp evicted
+pod/coredns-66bc5c9577-t9hb7 evicted
+pod/coredns-66bc5c9577-z5b2p evicted
+node/wrk-01 drained
+```
+5. Proceed to upgrade `kubelet` and `kubectl` using
+```
+sudo apt-mark unhold kubelet kubectl && \
+sudo apt-get update && sudo apt-get install -y kubelet='1.34.3-*' kubectl='1.34.3-*' && \
+sudo apt-mark hold kubelet kubectl
+```
+6. Once finished, restart the process. By this time, the new version can be validate fron the contorl node.
+```
+ansible@CTRL-01:~$ kubectl get nodes
+NAME      STATUS                     ROLES           AGE     VERSION
+ctrl-01   Ready                      control-plane   5h49m   v1.34.3
+wrk-01    Ready,SchedulingDisabled   <none>          5h40m   v1.34.3
+```
+7. Proceed to uncordon worker node
+```
+ansible@CTRL-01:~$ kubectl get nodes
+NAME      STATUS   ROLES           AGE     VERSION
+ctrl-01   Ready    control-plane   5h50m   v1.34.3
+wrk-01    Ready    <none>          5h41m   v1.34.3
+```
+
+```
+7. 
+
