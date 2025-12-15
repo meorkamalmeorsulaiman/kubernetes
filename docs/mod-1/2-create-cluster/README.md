@@ -48,3 +48,29 @@ The script actually do few stuff:
 2. Downloading containerd and runc binary and install
 
 At the end, you can check `systemd` for `containerd`
+```
+ansible@CTRL-01:~/cka$ sudo systemctl status containerd
+● containerd.service - containerd container runtime
+     Loaded: loaded (/usr/lib/systemd/system/containerd.service; enabled; preset: enabled)
+     Active: active (running) since Mon 2025-12-15 08:07:16 UTC; 14s ago
+       Docs: https://containerd.io
+    Process: 7299 ExecStartPre=/sbin/modprobe overlay (code=exited, status=0/SUCCESS)
+   Main PID: 7300 (containerd)
+      Tasks: 10
+     Memory: 13.2M (peak: 14.0M)
+        CPU: 92ms
+     CGroup: /system.slice/containerd.service
+             └─7300 /usr/bin/containerd
+
+Dec 15 08:07:16 CTRL-01 containerd[7300]: time="2025-12-15T08:07:16.775688578Z" level=info msg="Start subscribing containerd event"
+Dec 15 08:07:16 CTRL-01 containerd[7300]: time="2025-12-15T08:07:16.775753996Z" level=info msg="Start recovering state"
+Dec 15 08:07:16 CTRL-01 containerd[7300]: time="2025-12-15T08:07:16.775836015Z" level=info msg="Start event monitor"
+Dec 15 08:07:16 CTRL-01 containerd[7300]: time="2025-12-15T08:07:16.775842412Z" level=info msg=serving... address=/run/containerd/container>
+Dec 15 08:07:16 CTRL-01 containerd[7300]: time="2025-12-15T08:07:16.775873197Z" level=info msg="Start snapshots syncer"
+Dec 15 08:07:16 CTRL-01 containerd[7300]: time="2025-12-15T08:07:16.776204872Z" level=info msg=serving... address=/run/containerd/container>
+Dec 15 08:07:16 CTRL-01 containerd[7300]: time="2025-12-15T08:07:16.776297171Z" level=info msg="containerd successfully booted in 0.027253s"
+Dec 15 08:07:16 CTRL-01 containerd[7300]: time="2025-12-15T08:07:16.776296189Z" level=info msg="Start cni network conf syncer for default"
+Dec 15 08:07:16 CTRL-01 containerd[7300]: time="2025-12-15T08:07:16.776323609Z" level=info msg="Start streaming server"
+Dec 15 08:07:16 CTRL-01 systemd[1]: Started containerd.service - containerd container runtime.
+```
+
