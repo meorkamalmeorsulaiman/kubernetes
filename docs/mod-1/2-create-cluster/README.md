@@ -74,3 +74,127 @@ Dec 15 08:07:16 CTRL-01 containerd[7300]: time="2025-12-15T08:07:16.776323609Z" 
 Dec 15 08:07:16 CTRL-01 systemd[1]: Started containerd.service - containerd container runtime.
 ```
 
+Proceed to install K8s tools
+```
+sudo ./setup-kubetools.sh
+```
+
+At the end, `kubectl` should work
+```
+ansible@CTRL-01:~/cka$ kubectl version
+Client Version: v1.33.7
+Kustomize Version: v5.6.0
+The connection to the server localhost:8080 was refused - did you specify the right host or port?
+```
+
+## Initializing cluster
+
+- Initialize a K8 cluster using kubeadm on the control node only
+- With root privileges, use `sudo kubeadm init` to start initialize
+- At the end, you should see the `kubeclt` config steps:
+```
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+Alternatively, if you are the root user, you can run:
+
+  export KUBECONFIG=/etc/kubernetes/admin.conf
+
+You should now deploy a pod network to the cluster.
+Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+Then you can join any number of worker nodes by running the following on each as root:
+
+kubeadm join 192.168.101.11:6443 --token rm6lw5.inu6zii4zpnr0huw \`
+```
+
+Configure `kubectl` as below:
+```
+mkdir ~/.kube
+sudo cp /etc/kubernetes/admin.conf ~/.kube/config
+sudo chown $USER ~/.kube/config
+```
+
+At the end you should able to use `kubectl`
+```
+ansible@CTRL-01:~$ kubectl get nodes
+NAME      STATUS     ROLES           AGE    VERSION
+ctrl-01   NotReady   control-plane   2m6s   v1.33.7
+```
+
+## Setting up CNI plugin
+
+Setup this on controler node, use below command to install calico
+```
+kubectl apply -f  https://docs.projectcalico.org/manifests/calico.yaml
+```
+
+At the end, you will see new pod setup:
+```
+ansible@CTRL-01:~$ kubectl get pod -n kube-system
+NAME                                       READY   STATUS              RESTARTS   AGE
+calico-kube-controllers-7498b9bb4c-4zzpx   0/1     ContainerCreating   0          30s
+calico-node-tmnqj                          0/1     Running             0          30s
+coredns-674b8bbfcf-kxkpt                   0/1     ContainerCreating   0          5m17s
+coredns-674b8bbfcf-wr5bb                   0/1     ContainerCreating   0          5m17s
+etcd-ctrl-01                               1/1     Running             0          5m23s
+kube-apiserver-ctrl-01                     1/1     Running             0          5m23s
+kube-controller-manager-ctrl-01            1/1     Running             0          5m23s
+kube-proxy-vtn52                           1/1     Running             0          5m17s
+kube-scheduler-ctrl-01                     1/1     Running             0          5m24s
+```
+
+Validate that all the pod running
+```
+ansible@CTRL-01:~$ kubectl get pod -n kube-system
+NAME                                       READY   STATUS    RESTARTS   AGE
+calico-kube-controllers-7498b9bb4c-4zzpx   1/1     Running   0          64s
+calico-node-tmnqj                          1/1     Running   0          64s
+coredns-674b8bbfcf-kxkpt                   1/1     Running   0          5m51s
+coredns-674b8bbfcf-wr5bb                   1/1     Running   0          5m51s
+etcd-ctrl-01                               1/1     Running   0          5m57s
+kube-apiserver-ctrl-01                     1/1     Running   0          5m57s
+kube-controller-manager-ctrl-01            1/1     Running   0          5m57s
+kube-proxy-vtn52                           1/1     Running   0          5m51s
+kube-scheduler-ctrl-01                     1/1     Running   0          5m58s
+```
+
+## Joining K8s cluster on worker node
+
+Now, we have initialize and setup the cluster on the controller node. We proceed with joining the cluster using below command on the worker node:
+```
+sudo kubeadm join 192.168.101.11:6443 --token ol6rkf.jrvbp3hol590yygm --discovery-token-ca-cert-hash sha256:7e03bf0fcd6ed447213f3220bfb64fef9a1986412b91faee1c6e5800d29aef5a
+```
+
+At the end, you should see in the controller node that the worker listed as part of the cluster node:
+```
+ansible@CTRL-01:~$ kubectl get nodes
+NAME      STATUS     ROLES           AGE     VERSION
+ctrl-01   Ready      control-plane   9m13s   v1.33.7
+wrk-01    NotReady   <none>          40s     v1.33.7
+```
+
+Validate the node is ready
+```
+ansible@CTRL-01:~$ kubectl get nodes
+NAME      STATUS   ROLES           AGE     VERSION
+ctrl-01   Ready    control-plane   9m54s   v1.33.7
+wrk-01    Ready    <none>          81s     v1.33.7
+```
+
+## Setting up cluster using config file
+
+Use `sudo kubeadm config print init-defaults > config.yaml` to write all configuration parameters to `config.yaml` Edit the `config.yaml` with all desired parameters
+- Set a least the following parameters:
+     - localAPIEndpoint.advertiseAddress
+          - Valid IP address on which the apiserver is available
+    - nodeRegistration.name
+          - The name of the apiservernode
+Next, use `sudo kubeadm init --config config.yaml` to use the `config.yaml` file while installing the cluster
+
