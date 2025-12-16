@@ -587,8 +587,6 @@ ctrl-01   Ready    control-plane   5h50m   v1.34.3
 wrk-01    Ready    <none>          5h41m   v1.34.3
 ```
 
-```
-
 ## HA Options
 
 HA Setups:
