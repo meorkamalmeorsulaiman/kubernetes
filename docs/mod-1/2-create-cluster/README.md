@@ -130,7 +130,7 @@ ctrl-01   NotReady   control-plane   2m6s   v1.33.7
 
 ## Setting up CNI plugin
 
-Setup this on controler node, use below command to install calico
+Setup this on control node (control-node only), use below command to install calico
 ```
 kubectl apply -f  https://docs.projectcalico.org/manifests/calico.yaml
 ```
