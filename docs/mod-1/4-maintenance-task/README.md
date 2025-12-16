@@ -588,5 +588,17 @@ wrk-01    Ready    <none>          5h41m   v1.34.3
 ```
 
 ```
-7. 
+
+## HA Options
+
+HA Setups:
+1. Run the control plane and etcd on the same node - stacked control plane
+2. Seperate the control plane and etcd on different nod - External etcd cluster
+
+HA Requirments:
+1. Load balancing with LB to distribute workload between the control nodes
+2. LB feature can use external software
+3. In the exam, LB setup isn't required
+
+
 
