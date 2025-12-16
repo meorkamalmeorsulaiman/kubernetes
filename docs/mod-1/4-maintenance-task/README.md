@@ -586,3 +586,195 @@ NAME      STATUS   ROLES           AGE     VERSION
 ctrl-01   Ready    control-plane   5h50m   v1.34.3
 wrk-01    Ready    <none>          5h41m   v1.34.3
 ```
+
+## HA Options
+
+HA Setups:
+1. Run the control plane and etcd on the same node - stacked control plane
+2. Seperate the control plane and etcd on different nod - External etcd cluster
+
+HA Requirments:
+1. Load balancing with LB to distribute workload between the control nodes
+2. LB feature can use external software
+3. In the exam, LB setup isn't required
+
+Load balancer configuration:
+1. Use HAProxy to load-balance port 6443 across the control nodes
+2. Traffic forwarded to `kube-apiserver` port 6443
+3. Use keepalived on all control node with a VIP
+4. `kubectl` connect to the VIP instead of the `CTRL-01` IP address
+5. Use provided script from the repo `setup-lb-ubuntu.sh` to setup the HA - run on one of the control node only
+
+Setting up the HA by running the script prior to initializing the cluster, update the VIP and the interface name accordingly. At the end you should be able to check the VIP
+```
+ansible@CTRL-01:~/cka$ ip a
+1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
+    link/loopback 00:00:00:00:00:00 brd 00:00:00:00:00:00
+    inet 127.0.0.1/8 scope host lo
+       valid_lft forever preferred_lft forever
+    inet6 ::1/128 scope host noprefixroute 
+       valid_lft forever preferred_lft forever
+2: eth0: <BROADCAST,MULTICAST,UP,LOWER_UP> mtu 1500 qdisc fq_codel state UP group default qlen 1000
+    link/ether bc:24:11:fc:6f:e6 brd ff:ff:ff:ff:ff:ff
+    altname enp0s18
+    inet 192.168.101.11/24 brd 192.168.101.255 scope global eth0
+       valid_lft forever preferred_lft forever
+    inet 192.168.101.10/24 scope global secondary eth0
+       valid_lft forever preferred_lft forever
+    inet6 fe80::be24:11ff:fefc:6fe6/64 scope link 
+       valid_lft forever preferred_lft forever
+```
+
+Proceed to setup HA cluster with the following steps:
+1. Run 
+```
+sudo kubeadm init --control-plane-endpoint "[VIP]:6443" --upload-certs
+```
+2. Configure the `kubectl` client
+3. Setup CNI plugin with
+```
+kubectl apply -f  https://docs.projectcalico.org/manifests/calico.yaml
+```
+4. Copy and use the `kubeadm join` command, there will be 2 join commands - control and worker. Use option `--control-plane` for control node
+5. Verify the cluster nodes using `kubectl get nodes`
+
+
+Setup the HA Cluster by starting on `CTRL-01` and should see the client setup and 2 join commands
+```
+Your Kubernetes control-plane has initialized successfully!
+
+To start using your cluster, you need to run the following as a regular user:
+
+  mkdir -p $HOME/.kube
+  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+  sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+Alternatively, if you are the root user, you can run:
+
+  export KUBECONFIG=/etc/kubernetes/admin.conf
+
+You should now deploy a pod network to the cluster.
+Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
+  https://kubernetes.io/docs/concepts/cluster-administration/addons/
+
+You can now join any number of control-plane nodes running the following command on each as root:
+
+  kubeadm join 192.168.101.10:6443 --token wgax9h.xsu2183yrdpon934 \
+        --discovery-token-ca-cert-hash sha256:ce0d6e0ab6b99715b37054e0c67acc1767059bae9533ea8438168aa56a0be733 \
+        --control-plane --certificate-key 77433bfa22546aad2bb784fbc201d3573a6726b375abf8f87ca37f1603d39745
+
+Please note that the certificate-key gives access to cluster sensitive data, keep it secret!
+As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you can use
+"kubeadm init phase upload-certs --upload-certs" to reload certs afterward.
+
+Then you can join any number of worker nodes by running the following on each as root:
+
+kubeadm join 192.168.101.10:6443 --token wgax9h.xsu2183yrdpon934 \
+        --discovery-token-ca-cert-hash sha256:ce0d6e0ab6b99715b37054e0c67acc1767059bae9533ea8438168aa56a0be733 
+```
+
+Proceed to configure the `kubectl`
+```
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+```
+
+After that, proceed to install the CNI plugin
+```
+kubectl apply -f  https://docs.projectcalico.org/manifests/calico.yaml
+```
+
+Moving on, join the remaining control nodes into the cluster. Setup the kube client too. 
+```
+ansible@CTRL-02:~$ sudo kubeadm join 192.168.101.10:6443 --token wgax9h.xsu2183yrdpon934 \
+        --discovery-token-ca-cert-hash sha256:ce0d6e0ab6b99715b37054e0c67acc1767059bae9533ea8438168aa56a0be733 \
+        --control-plane --certificate-key 77433bfa22546aad2bb784fbc201d3573a6726b375abf8f87ca37f1603d39745
+## Snippet ##
+To start administering your cluster from this node, you need to run the following as a regular user:
+
+        mkdir -p $HOME/.kube
+        sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+        sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+Run 'kubectl get nodes' to see this node join the cluster.
+```
+
+Validate the cluster nodes and check all controllers that
+```
+ansible@CTRL-01:~$ kubectl get nodes
+NAME      STATUS   ROLES           AGE     VERSION
+ctrl-01   Ready    control-plane   7m18s   v1.34.3
+ctrl-02   Ready    control-plane   3m4s    v1.34.3
+ctrl-03   Ready    control-plane   26s     v1.34.3
+```
+
+Proceed to join the worker node in the cluster using the worker join command
+```
+ansible@WRK-01:~/cka$ sudo kubeadm join 192.168.101.10:6443 --token wgax9h.xsu2183yrdpon934 \
+        --discovery-token-ca-cert-hash sha256:ce0d6e0ab6b99715b37054e0c67acc1767059bae9533ea8438168aa56a0be733 
+[preflight] Running pre-flight checks
+[preflight] Reading configuration from the "kubeadm-config" ConfigMap in namespace "kube-system"...
+[preflight] Use 'kubeadm init phase upload-config kubeadm --config your-config-file' to re-upload it.
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/instance-config.yaml"
+[patches] Applied patch of type "application/strategic-merge-patch+json" to target "kubeletconfiguration"
+[kubelet-start] Writing kubelet configuration to file "/var/lib/kubelet/config.yaml"
+[kubelet-start] Writing kubelet environment file with flags to file "/var/lib/kubelet/kubeadm-flags.env"
+[kubelet-start] Starting the kubelet
+[kubelet-check] Waiting for a healthy kubelet at http://127.0.0.1:10248/healthz. This can take up to 4m0s
+[kubelet-check] The kubelet is healthy after 1.001429479s
+[kubelet-start] Waiting for the kubelet to perform the TLS Bootstrap
+
+This node has joined the cluster:
+* Certificate signing request was sent to apiserver and a response was received.
+* The Kubelet was informed of the new secure connection details.
+
+Run 'kubectl get nodes' on the control-plane to see this node join the cluster.
+```
+
+Validate the cluster nodes
+```
+ansible@CTRL-01:~$ kubectl get nodes
+NAME      STATUS   ROLES           AGE     VERSION
+ctrl-01   Ready    control-plane   11m     v1.34.3
+ctrl-02   Ready    control-plane   6m50s   v1.34.3
+ctrl-03   Ready    control-plane   4m12s   v1.34.3
+wrk-01    Ready    <none>          74s     v1.34.3
+```
+
+Test by shutting down `ctrl-01` for testing and login to `ctrl-02`
+```
+ansible@ANS-CTRL:~/kubernetes$ ssh 192.168.101.10
+ansible@CTRL-02:~$ kubectl get nodes
+NAME      STATUS     ROLES           AGE     VERSION
+ctrl-01   NotReady   control-plane   13m     v1.34.3
+ctrl-02   Ready      control-plane   9m39s   v1.34.3
+ctrl-03   Ready      control-plane   7m1s    v1.34.3
+wrk-01    Ready      <none>          4m3s    v1.34.3
+ansible@CTRL-02:~$ kubectl get pod -n kube-system
+NAME                                      READY   STATUS    RESTARTS   AGE
+calico-kube-controllers-b45f49df6-sl42r   1/1     Running   0          10m
+calico-node-4jkgm                         1/1     Running   0          6m6s
+calico-node-8lxfh                         1/1     Running   0          10m
+calico-node-gng5l                         1/1     Running   0          3m8s
+calico-node-nrdw9                         1/1     Running   0          8m44s
+coredns-66bc5c9577-hdp2c                  1/1     Running   0          12m
+coredns-66bc5c9577-wjhnc                  1/1     Running   0          12m
+etcd-ctrl-01                              1/1     Running   0          12m
+etcd-ctrl-02                              1/1     Running   0          8m44s
+etcd-ctrl-03                              1/1     Running   0          6m3s
+kube-apiserver-ctrl-01                    1/1     Running   0          12m
+kube-apiserver-ctrl-02                    1/1     Running   0          8m44s
+kube-apiserver-ctrl-03                    1/1     Running   0          6m3s
+kube-controller-manager-ctrl-01           1/1     Running   0          12m
+kube-controller-manager-ctrl-02           1/1     Running   0          8m44s
+kube-controller-manager-ctrl-03           1/1     Running   0          6m3s
+kube-proxy-2nwmt                          1/1     Running   0          8m44s
+kube-proxy-4rlwr                          1/1     Running   0          6m6s
+kube-proxy-6kgj2                          1/1     Running   0          12m
+kube-proxy-vpnkt                          1/1     Running   0          3m8s
+kube-scheduler-ctrl-01                    1/1     Running   0          12m
+kube-scheduler-ctrl-02                    1/1     Running   0          8m44s
+kube-scheduler-ctrl-03                    1/1     Running   0          6m3s
+ansible@CTRL-02:~$ 
+```
