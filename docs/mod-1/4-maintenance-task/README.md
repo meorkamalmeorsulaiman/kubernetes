@@ -600,5 +600,13 @@ HA Requirments:
 2. LB feature can use external software
 3. In the exam, LB setup isn't required
 
+Load balancer configuration:
+1. Use HAProxy to load-balance port 6443 across the control nodes
+2. Traffic forwarded to `kube-apiserver` port 6443
+3. Use keepalived on all control node with a VIP
+4. `kubectl` connect to the VIP instead of the `CTRL-01` IP address
+5. Use provided script from the repo `setup-lb-ubuntu.sh` to setup the HA - run on one of the control node only
 
-
+Setting up the HA by running the script, update the VIP and the interface name accordingly. At the end you should be able to check the VIP
+```
+```
