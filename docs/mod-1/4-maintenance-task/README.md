@@ -4,14 +4,14 @@ Steps for maintenance work within the cluster. This topic divided into several s
 
 #### Table of Contents
 
-- [Underline](#underline)
+- [metric-servers](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#metric-servers-for-performance-metrics)
 - [Indent](#indent)
 - [Center](#center)
 - [Color](#color)
 
 ## Metric servers for performance metrics
 
-Not part of vanilla, have to install separately. Repo can be accessible from here: `https://github.com/kubernetes-sigs/metrics-server` Below is to install the metric server
+Not part of vanilla, have to install separately. metrics-server allow us to get k8s performance metrics. Repo can be accessible from here: `https://github.com/kubernetes-sigs/metrics-server` Below is to install the metric server
 ```
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 ```
