@@ -65,5 +65,9 @@ touch: test.txt: Permission denied
 
 ## User, ServiceAccount and API Access
 
+Users doesn't created by k8s api for people to authenticate and authorize. They are obtained externally defined by:
+- x.509 certificates
+- OpenID-Based like AD
 
+ServiceAccounts are used to authorized Pods to get access to specific API resources. Each Namespace has a ServiceAccount with the name default, this used by Pods to get minimal access to k8s resources. Additional ServiceAccount can be created to addtional access.
 
