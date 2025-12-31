@@ -5,7 +5,7 @@ Requirements:
 - At least 2 nodes
 - Container runtime and kubernetes tools must installed to proceed with cluster installation with kubeadm
 
-Installation procedures:
+Creating K8s Cluster:
 1. Setting up kernel modules
 2. Install container runtime
 3. Install K8s tools - kubeadm, kubectl and kubelet
@@ -14,6 +14,8 @@ Installation procedures:
 6. Set up CNI plugin
 7. Add other nodes
 8. Verify other nodes availability
+
+> :memo: **Note:** Step 1 - 3 aren't part of the exam.
 
 ## Setting up kernel modules
 
@@ -197,4 +199,5 @@ Use `sudo kubeadm config print init-defaults > config.yaml` to write all configu
     - nodeRegistration.name
           - The name of the apiservernode
 Next, use `sudo kubeadm init --config config.yaml` to use the `config.yaml` file while installing the cluster
+
 
