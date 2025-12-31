@@ -65,7 +65,7 @@ touch: test.txt: Permission denied
 
 ## Understanding User, ServiceAccount and API Access
 
-Users doesn't created by k8s api for people to authenticate and authorize. They are obtained externally defined by:
+Users doesn't created by k8s API for people to authenticate and authorize. They are obtained externally defined by:
 - x.509 certificates
 - OpenID-Based like AD
 
@@ -73,159 +73,21 @@ ServiceAccounts are used to authorized Pods to get access to specific API resour
 
 ## Understanding Role Based Access Control
 
-Role collections of verbs (list, create and etc.) Role give access to resource(pods) Role binding connecting user and ServiceAccount (attaches to pod) with the Role. This create a RBAC environment.
+Role is a collections of verbs (list, create and etc.) Role give access to resource(pods) Role binding connecting user and ServiceAccount (attaches to pod) with the Role. This create a RBAC environment.
 
 ## Setting up RBAC for ServiceAccount
 
-1st we need roles by using `kubectl create role [name]`
-2st we need rolebinding using `kubectl create rolebinding [name]`
-3rd we need ServiceAccount
+ServiceAccount is an identify in k8s that use to authenticate to API server or implementing security policies.
 
 We can try by first create a pod and check the ServiceAccount name as below:
 ```
 ansible@CTRL-01:~/cka$ kubectl run mypod --image=alpine -- sleep 3600
 pod/mypod created
 ansible@CTRL-01:~/cka$ kubectl get pods mypod -o yaml
-apiVersion: v1
-kind: Pod
-metadata:
-  annotations:
-    cni.projectcalico.org/containerID: ab32f45302e0896e0e96446032cd22acdb84c536811d5f9896049681ab26d63f
-    cni.projectcalico.org/podIP: 172.16.19.65/32
-    cni.projectcalico.org/podIPs: 172.16.19.65/32
-  creationTimestamp: "2025-12-31T09:15:38Z"
-  generation: 1
-  labels:
-    run: mypod
-  name: mypod
-  namespace: default
-  resourceVersion: "30097"
-  uid: cb4351a8-81b3-4b27-b27d-7626b3a48357
-spec:
-  containers:
-  - args:
-    - sleep
-    - "3600"
-    image: alpine
-    imagePullPolicy: Always
-    name: mypod
-    resources: {}
-    terminationMessagePath: /dev/termination-log
-    terminationMessagePolicy: File
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: kube-api-access-kcgpg
-      readOnly: true
-  dnsPolicy: ClusterFirst
-  enableServiceLinks: true
-  nodeName: wrk-02
-  preemptionPolicy: PreemptLowerPriority
-  priority: 0
-  restartPolicy: Always
-  schedulerName: default-scheduler
-  securityContext: {}
+<<snippet>>
   serviceAccount: default
   serviceAccountName: default
-  terminationGracePeriodSeconds: 30
-  tolerations:
-  - effect: NoExecute
-    key: node.kubernetes.io/not-ready
-    operator: Exists
-    tolerationSeconds: 300
-  - effect: NoExecute
-    key: node.kubernetes.io/unreachable
-    operator: Exists
-    tolerationSeconds: 300
-  volumes:
-  - name: kube-api-access-kcgpg
-    projected:
-      defaultMode: 420
-      sources:
-      - serviceAccountToken:
-          expirationSeconds: 3607
-          path: token
-      - configMap:
-          items:
-          - key: ca.crt
-            path: ca.crt
-          name: kube-root-ca.crt
-      - downwardAPI:
-          items:
-          - fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-            path: namespace
-status:
-  conditions:
-  - lastProbeTime: null
-    lastTransitionTime: "2025-12-31T09:15:47Z"
-    observedGeneration: 1
-    status: "True"
-    type: PodReadyToStartContainers
-  - lastProbeTime: null
-    lastTransitionTime: "2025-12-31T09:15:38Z"
-    observedGeneration: 1
-    status: "True"
-    type: Initialized
-  - lastProbeTime: null
-    lastTransitionTime: "2025-12-31T09:15:47Z"
-    observedGeneration: 1
-    status: "True"
-    type: Ready
-  - lastProbeTime: null
-    lastTransitionTime: "2025-12-31T09:15:47Z"
-    observedGeneration: 1
-    status: "True"
-    type: ContainersReady
-  - lastProbeTime: null
-    lastTransitionTime: "2025-12-31T09:15:38Z"
-    observedGeneration: 1
-    status: "True"
-    type: PodScheduled
-  containerStatuses:
-  - containerID: containerd://b03c48d44a70baefe04e859a77c63e2287d3350f3fb204ecff473f2d9e045e3d
-    image: docker.io/library/alpine:latest
-    imageID: docker.io/library/alpine@sha256:865b95f46d98cf867a156fe4a135ad3fe50d2056aa3f25ed31662dff6da4eb62
-    lastState: {}
-    name: mypod
-    ready: true
-    resources: {}
-    restartCount: 0
-    started: true
-    state:
-      running:
-        startedAt: "2025-12-31T09:15:46Z"
-    user:
-      linux:
-        gid: 0
-        supplementalGroups:
-        - 0
-        - 1
-        - 2
-        - 3
-        - 4
-        - 6
-        - 10
-        - 11
-        - 20
-        - 26
-        - 27
-        uid: 0
-    volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: kube-api-access-kcgpg
-      readOnly: true
-      recursiveReadOnly: Disabled
-  hostIP: 192.168.101.22
-  hostIPs:
-  - ip: 192.168.101.22
-  observedGeneration: 1
-  phase: Running
-  podIP: 172.16.19.65
-  podIPs:
-  - ip: 172.16.19.65
-  qosClass: BestEffort
-  startTime: "2025-12-31T09:15:38Z"
+<<snippet>>
 ```
 
 Let check what the default ServiceAccount can do:
@@ -354,6 +216,8 @@ User account consist of authorized certificate, to create a user account:
 - Create a configuration file that uses these keys to access the k8s cluster
 - Create an RBAC Role
 - Create an RBAC RoleBinding
+
+This section not covered in CKA
 
 Below steps to create user account:
 1 - Create namespace `kubectl create ns NAME`
