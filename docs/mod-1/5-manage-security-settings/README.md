@@ -63,11 +63,19 @@ touch: test.txt: Permission denied
 /data $ exit
 ```
 
-## User, ServiceAccount and API Access
+## Understanding User, ServiceAccount and API Access
 
 Users doesn't created by k8s api for people to authenticate and authorize. They are obtained externally defined by:
 - x.509 certificates
 - OpenID-Based like AD
 
 ServiceAccounts are used to authorized Pods to get access to specific API resources. Each Namespace has a ServiceAccount with the name default, this used by Pods to get minimal access to k8s resources. Additional ServiceAccount can be created to addtional access.
+
+## Understanding Role Based Access Control
+
+Role collections of verbs (list, create and etc.) Role give access to resource(pods) Role binding connecting user and ServiceAccount (attaches to pod) with the Role. This create a RBAC environment.
+
+## Setting up RBAC for ServiceAccount
+
+
 
