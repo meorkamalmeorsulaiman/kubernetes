@@ -1,6 +1,7 @@
 # Maintenance tasks
 
-Steps for maintenance work within the cluster
+Steps for maintenance work within the cluster. This topic divided into several sections:
+- Using metric-server to get performance metrics
 
 ## Metric servers for performance metrics
 
