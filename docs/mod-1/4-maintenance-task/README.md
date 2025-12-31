@@ -1,7 +1,13 @@
 # Maintenance tasks
 
 Steps for maintenance work within the cluster. This topic divided into several sections:
-- Using metric-server to get performance metrics
+
+#### Table of Contents
+
+- [Underline](#underline)
+- [Indent](#indent)
+- [Center](#center)
+- [Color](#color)
 
 ## Metric servers for performance metrics
 
