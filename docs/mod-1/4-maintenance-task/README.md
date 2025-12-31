@@ -1,10 +1,21 @@
 # Maintenance tasks
 
-Steps for maintenance work within the cluster
+Steps for maintenance work within the cluster. This topic divided into several sections:
+
+#### Table of Contents
+
+- [metric-servers](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#metric-servers-for-performance-metrics)
+- [Backing up Etcd](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#backing-up-the-etcd)
+- [Restoring Etcd](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#backing-up-the-etcd)
+- [Upgrade Control Node](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#backing-up-the-etcd)
+- [Upgrade Worker Node](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#upgrade-worker-node)
+- [K8s HA Cluster](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#k8s-ha-cluster)
+- [K8s HA Cluster Configuration](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#k8s-ha-cluster-configuration)
+- [Demo K8s HA Cluster Deployment](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#demo-k8s-ha-cluster-deployment)
 
 ## Metric servers for performance metrics
 
-Not part of vanilla, have to install separately. Repo can be accessible from here: `https://github.com/kubernetes-sigs/metrics-server` Below is to install the metric server
+Not part of vanilla, have to install separately. metrics-server allow us to get k8s performance metrics. Repo can be accessible from here: `https://github.com/kubernetes-sigs/metrics-server` Below is to install the metric server
 ```
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 ```
@@ -587,25 +598,29 @@ ctrl-01   Ready    control-plane   5h50m   v1.34.3
 wrk-01    Ready    <none>          5h41m   v1.34.3
 ```
 
-## HA Options
+## K8s HA Cluster
 
-HA Setups:
+### HA Options
+HA Options:
 1. Run the control plane and etcd on the same node - stacked control plane
 2. Seperate the control plane and etcd on different nod - External etcd cluster
 
+### HA Requirements
 HA Requirments:
 1. Load balancing with LB to distribute workload between the control nodes
 2. LB feature can use external software
 3. In the exam, LB setup isn't required
 
-Load balancer configuration:
+### K8s HA Cluster Configuration
+Configuration:
 1. Use HAProxy to load-balance port 6443 across the control nodes
 2. Traffic forwarded to `kube-apiserver` port 6443
 3. Use keepalived on all control node with a VIP
 4. `kubectl` connect to the VIP instead of the `CTRL-01` IP address
 5. Use provided script from the repo `setup-lb-ubuntu.sh` to setup the HA - run on one of the control node only
 
-Setting up the HA by running the script prior to initializing the cluster, update the VIP and the interface name accordingly. At the end you should be able to check the VIP
+#### Keepalived and HAProxy Setup
+Setting up the `keepalived` and `HAProxy` by running the script prior to initializing the cluster, update the VIP and the interface name accordingly. At the end you should be able to check the VIP
 ```
 ansible@CTRL-01:~/cka$ ip a
 1: lo: <LOOPBACK,UP,LOWER_UP> mtu 65536 qdisc noqueue state UNKNOWN group default qlen 1000
@@ -625,6 +640,7 @@ ansible@CTRL-01:~/cka$ ip a
        valid_lft forever preferred_lft forever
 ```
 
+#### Initializing K8s HA Cluster
 Proceed to setup HA cluster with the following steps:
 1. Run 
 ```
@@ -636,8 +652,21 @@ sudo kubeadm init --control-plane-endpoint "[VIP]:6443" --upload-certs
 kubectl apply -f  https://docs.projectcalico.org/manifests/calico.yaml
 ```
 4. Copy and use the `kubeadm join` command, there will be 2 join commands - control and worker. Use option `--control-plane` for control node
+
+Control node join command
+```
+  kubeadm join 192.168.101.10:6443 --token [TOKEN] --discovery-token-ca-cert-hash [CERT-HASH] --control-plane --certificate-key [CERT-KEY]
+```
+
+Worker node join command
+```
+kubeadm join [VIP]:6443 --token [TOKEN] --discovery-token-ca-cert-hash [CERT-HASH]
+```
+
 5. Verify the cluster nodes using `kubectl get nodes`
 
+
+### Demo K8s HA Cluster Deployment
 
 Setup the HA Cluster by starting on `CTRL-01` and should see the client setup and 2 join commands
 ```
