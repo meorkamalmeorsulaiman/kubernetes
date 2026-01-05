@@ -14,3 +14,7 @@
 ## Using Deployments
 
 Standard to run k8s deployment. Deployments responsible to start the pod. Deployments resources use replicaset to scale pod. Deployment offer rolling update feature. To deploy use `kubectl create deploy` 
+
+## DeamonSets
+
+A resource that starts application in each cluster node. It start necessary agents on all cluster nodes. We can use for user workloads. 
