@@ -11,3 +11,6 @@
 8. [Sidecar for logging](#URL)
 
 
+## Using Deployments
+
+Standard to run k8s deployment. Deployments responsible to start the pod. Deployments resources use replicaset to scale pod. Deployment offer rolling update feature. To deploy use `kubectl create deploy` 
