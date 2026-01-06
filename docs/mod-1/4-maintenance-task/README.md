@@ -807,3 +807,9 @@ kube-scheduler-ctrl-02                    1/1     Running   0          8m44s
 kube-scheduler-ctrl-03                    1/1     Running   0          6m3s
 ansible@CTRL-02:~$ 
 ```
+
+## Lab Practice
+
+Tasks:
+- Backup Etcd
+- Restore Etcd
