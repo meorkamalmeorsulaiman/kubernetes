@@ -188,6 +188,8 @@ statefulset.apps/web   0/3     3s
 ```
 
 ## Running in Individual Pod
-Has a lot of disadvantages when running individual pod, no redundancy and load-balacing and etc.
+Has a lot of disadvantages when running individual pod, no redundancy and load-balacing and etc. Alway use `Deployments`, `DaemonSets` or `StatefulSets`
+
+## Pod Initialization
 
 
