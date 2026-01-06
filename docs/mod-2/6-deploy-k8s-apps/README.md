@@ -396,3 +396,9 @@ pod/sidecar created
 ansible@CTRL-01:~$ kubectl exec -it sidecar -c exporter -- cat /usr/lib/nginx/html/index.html
 hello
 ```
+
+## Lab Practice
+
+Tasks:
+- Create a DaemonSet with name `labdaemon`
+- Ensure the pod run on every worker in the cluster
