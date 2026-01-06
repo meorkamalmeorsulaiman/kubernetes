@@ -155,6 +155,36 @@ mondeploy-85b887cb9d-p6xbf   1/1     Running   0          8m23s   172.16.89.195 
 mondeploy-85b887cb9d-zjmw5   1/1     Running   0          8m23s   172.16.89.196   wrk-01   <none>           <none>
 ```
 
+## StatefulSets
 
+Features that needed by stateful applications. Provide pod ordering and uniqueness. It also maintain sticky identifier for each Pods. You need StatefulSet to use in stateful application instead of deployments. Example of StatefulSet config can be found here: [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) Based on the config we noticed few settings:
+1. `Kind` is `StatefulSet`
+2. Headless service with `ClusterIP` set to none
+3. Storage involve with `VolumeClaimTemplates` We can check the storage class using `kubectl get storageclass` If you dont have any storage configured, use this example and deploy your storage [StorageClass Example](https://raw.githubusercontent.com/kubernetes/website/main/content/en/examples/storage/storageclass-low-latency.yaml)
+We can deploy the stateful application by 1st checking the storage:
+```
+ansible@CTRL-01:~$ kubectl get storageclass
+NAME          PROVISIONER                         RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
+low-latency   csi-driver.example-vendor.example   Retain          WaitForFirstConsumer   true                   2m16s
+```
+
+Update the storage in the config and deploy:
+```
+ansible@CTRL-01:~$ grep storageClassName statefulset.yml
+      storageClassName: "low-latency"
+ansible@CTRL-01:~$ kubectl apply -f statefulset.yml
+service/nginx created
+statefulset.apps/web created
+ansible@CTRL-01:~$ kubectl get all
+NAME        READY   STATUS    RESTARTS   AGE
+pod/web-0   0/1     Pending   0          3s
+
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   110m
+service/nginx        ClusterIP   None         <none>        80/TCP    3s
+
+NAME                   READY   AGE
+statefulset.apps/web   0/3     3s
+```
 
 
