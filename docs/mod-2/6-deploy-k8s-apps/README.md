@@ -320,4 +320,79 @@ Multi-container pod setup that provide additional function to the pod, it is an 
 1. Sidecar: provide additional functionalities
 2. Ambassador: use a a proxy for external connection
 3. Adapter: used to standadize or normalize main container output
+
 K8s v1.29 and later, an init container with `restartPolicy` set to `Always` will consider as Sidecar container
+
+### Setup a sidecar for logging
+
+1. Create a pod that write a log
+2. Create a shared volume with an emptyDir that mounted to the log location
+3. Add Sidecar container that run nginx and mount the share volume on nginx html
+4. Expose the service
+
+### Getting the emptryDir shared volume config
+
+Config can be found in [EmptryDir Example](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir-configuration-example) We need this as the base template for the volumeMount configs
+
+### Getting the template for pod that write a log
+
+Below is how we can generate and get the arguments to generate logs
+```
+ansible@CTRL-01:~$ kubectl run test --image=busybox --dry-run=client -o yaml -- sh "echo hello > /tmp/myfile"
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: test
+  name: test
+spec:
+  containers:
+  - args:
+    - sh
+    - echo hello > /tmp/myfile
+    image: busybox
+    name: test
+    resources: {}
+  dnsPolicy: ClusterFirst
+  restartPolicy: Always
+status: {}
+```
+
+### Comple configs
+
+The complete configs as below:
+```
+ansible@CTRL-01:~$ cat mysidecar.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: sidecar
+spec:
+  containers:
+  - image: busybox
+    name: logging
+    volumeMounts:
+    - mountPath: /messages
+      name: cache-volume
+    args:
+    - sh
+    - -c
+    - echo hello > /messages/index.html
+  - image: nginx
+    name: sidecar
+    volumeMounts:
+    - mountPath: /usr/lib/nginx/html
+      name: cache-volume
+  volumes:
+  - name: cache-volume
+    emptyDir:
+      sizeLimit: 500Mi
+```
+
+We noticed that the logging container mount it directory `/messages` to the shared volume named `cache-volume`. Then it will write into `/messages/index.html` as a log. The sidecar on the other hand mount it default http directory `/usr/lib/nginx/html` to the same shared volume with logging container. This will result in nginx displying the log content in http. Let's run and test container within the `sidecar`  pod.
+```
+ansible@CTRL-01:~$ kubectl apply -f mysidecar.yml
+pod/sidecar created
+ansible@CTRL-01:~$ kubectl exec -it sidecar -c exporter -- cat /usr/lib/nginx/html/index.html
+hello
+```
