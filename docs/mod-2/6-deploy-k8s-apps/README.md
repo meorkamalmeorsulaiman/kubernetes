@@ -192,4 +192,41 @@ Has a lot of disadvantages when running individual pod, no redundancy and load-b
 
 ## Pod Initialization
 
+Using `Init Containers` when you need to do preparation. Use `init containers` when there is a preliminary setup required. Example of `init container` that define Pod with 2 init containers [Init Container Example](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/#init-containers-in-use) and edit as below:
+```
+ansible@CTRL-01:~$ cat myinit.yml
+apiVersion: v1
+kind: Pod
+metadata:
+  name: myapp-pod
+  labels:
+    app.kubernetes.io/name: MyApp
+spec:
+  containers:
+  - name: myapp-container
+    image: busybox
+    command: ['sh', '-c', 'echo The app is running! && sleep 3600']
+  initContainers:
+  - name: init-myservice
+    image: busybox
+    command: ['sleep', '20']
+  - name: init-mydb
+    image: busybox
+    command: ['sleep', '20']
+```
 
+Apply the config, the main container wont run until the 2 init container ready:
+```
+ansible@CTRL-01:~$ kubectl get pods
+NAME        READY   STATUS     RESTARTS   AGE
+myapp-pod   0/1     Init:1/2   0          45s
+web-0       0/1     Pending    0          11m
+```
+
+Confirmed that the main container runnning
+```
+ansible@CTRL-01:~$ kubectl get pods
+NAME        READY   STATUS    RESTARTS   AGE
+myapp-pod   1/1     Running   0          77s
+web-0       0/1     Pending   0          11m
+```
