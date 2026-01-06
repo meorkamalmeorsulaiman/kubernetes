@@ -89,4 +89,72 @@ replicaset.apps/mondeploy-85b887cb9d   4         4         4       48s
 
 ## DeamonSets
 
-A resource that starts application in each cluster node. It start necessary agents on all cluster nodes. We can use for user workloads. 
+A resource that starts application in each cluster node. It start necessary agents on all cluster nodes. We can use for user workloads. Convert deployment to DaemonSets by creating the config file `kubectl create deploy daemon --image=nginx --dry-run=client -o yaml > daemon.yml` Edit by changing `kind` to `DaemonSet`, remove `replicas` and `strategy`:
+```
+ansible@CTRL-01:~$ cat daemon.yml
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  labels:
+    app: daemon
+  name: daemon
+spec:
+  selector:
+    matchLabels:
+      app: daemon
+  template:
+    metadata:
+      labels:
+        app: daemon
+    spec:
+      containers:
+      - image: nginx
+        name: nginx
+        resources: {}
+status: {}
+```
+
+Next apply with `kubectl apply -f daemon.yml`
+```
+ansible@CTRL-01:~$ kubectl apply -f daemon.yml
+daemonset.apps/daemon created
+ansible@CTRL-01:~$ kubectl get all
+NAME                             READY   STATUS    RESTARTS   AGE
+pod/daemon-bz6n6                 1/1     Running   0          4s
+pod/daemon-llfdt                 1/1     Running   0          4s
+pod/daemon-r7z7z                 1/1     Running   0          4s
+pod/mondeploy-85b887cb9d-8z8n4   1/1     Running   0          7m13s
+pod/mondeploy-85b887cb9d-kjthl   1/1     Running   0          7m13s
+pod/mondeploy-85b887cb9d-p6xbf   1/1     Running   0          6m59s
+pod/mondeploy-85b887cb9d-zjmw5   1/1     Running   0          6m59s
+
+NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   76m
+
+NAME                    DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
+daemonset.apps/daemon   3         3         3       3            3           <none>          4s
+
+NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/mondeploy   4/4     4            4           9m35s
+
+NAME                                   DESIRED   CURRENT   READY   AGE
+replicaset.apps/mondeploy-746c94dc94   0         0         0       9m35s
+replicaset.apps/mondeploy-85b887cb9d   4         4         4       7m13s
+```
+
+ You will notice that the `DaemonSets` runs on all the worker nodes without specifying the replicas
+```
+ansible@CTRL-01:~$ kubectl get pods -o wide
+NAME                         READY   STATUS    RESTARTS   AGE     IP              NODE     NOMINATED NODE   READINESS GATES
+daemon-bz6n6                 1/1     Running   0          88s     172.16.89.197   wrk-01   <none>           <none>
+daemon-llfdt                 1/1     Running   0          88s     172.16.19.67    wrk-02   <none>           <none>
+daemon-r7z7z                 1/1     Running   0          88s     172.16.108.3    wrk-03   <none>           <none>
+mondeploy-85b887cb9d-8z8n4   1/1     Running   0          8m37s   172.16.19.66    wrk-02   <none>           <none>
+mondeploy-85b887cb9d-kjthl   1/1     Running   0          8m37s   172.16.108.2    wrk-03   <none>           <none>
+mondeploy-85b887cb9d-p6xbf   1/1     Running   0          8m23s   172.16.89.195   wrk-01   <none>           <none>
+mondeploy-85b887cb9d-zjmw5   1/1     Running   0          8m23s   172.16.89.196   wrk-01   <none>           <none>
+```
+
+
+
+
