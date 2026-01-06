@@ -200,4 +200,11 @@ Use `sudo kubeadm config print init-defaults > config.yaml` to write all configu
           - The name of the apiservernode
 Next, use `sudo kubeadm init --config config.yaml` to use the `config.yaml` file while installing the cluster
 
+## Lab Practice
+
+Task 1:
+- Deploy K8s standalone cluster using `kubeadm`
+
+Task 2:
+- Deploy K8s standalone cluster using config file
 
