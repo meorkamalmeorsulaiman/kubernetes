@@ -313,3 +313,11 @@ spec:
 ```
 
 If you want to set cluster wide, edit `/etc/kubernetes/manifests/kube-controller-manager.yaml` with `- --horizontal-pod-autoscaler-downscale-delay=30s` The staic pod will automatically updated.
+
+## Sidecar or Multi-container
+
+Multi-container pod setup that provide additional function to the pod, it is an additional container within the pod. Few categories:
+1. Sidecar: provide additional functionalities
+2. Ambassador: use a a proxy for external connection
+3. Adapter: used to standadize or normalize main container output
+K8s v1.29 and later, an init container with `restartPolicy` set to `Always` will consider as Sidecar container
