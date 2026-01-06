@@ -7,7 +7,7 @@
 4. [Individual Pod](#URL)
 5. [Manage Pod initialization](#URL)
 6. [Scaling application](#URL)
-7. [Autoscale](#URL)
+7. [Autoscaler](#URL)
 8. [Sidecar for logging](#URL)
 
 
@@ -262,3 +262,7 @@ ansible@CTRL-01:~$ kubectl get deploy mondeploy -o yaml | grep replicas
   replicas: 5
   replicas: 5
 ```
+
+## Autoscaler - HorizontalPodAutoscaler (HPA)
+
+It is an API resource that manages autocalling. It work based on usage statistics and rely from metrics-server. App will auto scale up or down if the threshold passed. 
