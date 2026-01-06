@@ -4,7 +4,7 @@
 1. [Using Deployment](#URL)
 2. [Running Agents with DeamonSets](#URL)
 3. [Using StatefulSets](#URL)
-4. [Individual Pos](#URL)
+4. [Individual Pod](#URL)
 5. [Manage Pod initialization](#URL)
 6. [Scaling application](#URL)
 7. [Autoscale](#URL)
@@ -186,5 +186,8 @@ service/nginx        ClusterIP   None         <none>        80/TCP    3s
 NAME                   READY   AGE
 statefulset.apps/web   0/3     3s
 ```
+
+## Running in Individual Pod
+Has a lot of disadvantages when running individual pod, no redundancy and load-balacing and etc.
 
 
