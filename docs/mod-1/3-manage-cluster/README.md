@@ -71,3 +71,8 @@ Taints:             <none>
 ```
 
 ## Node service
+
+## Lab Practice 
+
+Tasks:
+- Create and run static pod
