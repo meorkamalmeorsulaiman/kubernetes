@@ -38,6 +38,19 @@ Few commands available to use:
 
 ## Static pods
 
+Kubelet systemd process is configured to run static Pods from `/etc/kubernetes/manifests` Static pod essential to start K8s core components. We can run any static pod by copying manifest file into the directory. Then restart `kubelet` so that it will pickup. Never run this on contorl node. Take the example manifest from control node using this command `kubectl run test-staticpod --image=nginx --dry-run=client -o yaml` Copy the output and use it in the worker node:
+```
+ansible@WRK-01:~$ sudo ls /etc/kubernetes/manifests/ -l
+total 4
+-rw-rw-r-- 1 ansible ansible 352 Jan  6 14:02 static.yaml
+```
+
+Kubelet should pickup right away
+```
+ansible@CTRL-01:~$ kubectl get pods -o wide
+NAME                    READY   STATUS              RESTARTS   AGE   IP       NODE     NOMINATED NODE   READINESS GATES
+test-staticpod-wrk-01   0/1     ContainerCreating   0          18s   <none>   wrk-01   <none>           <none>
+```
 
 ## Node states
 
@@ -76,3 +89,4 @@ Taints:             <none>
 
 Tasks:
 - Create and run static pod
+
