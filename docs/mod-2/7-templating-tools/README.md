@@ -19,7 +19,7 @@ Helm is K8s package manager, use to streamline installing and managing K8s appli
 
 ### Installing Helm
 
-Charts can be sotred locally or accessed remotely. Below is how to install helm binary by first download the binary. Prior to that confirm your architechture
+Charts can be sotred locally or accessed remotely. Below is how to install helm binary by first download the binary. Prior to that confirm your architecture
 ```
 controlplane:~$ arch
 x86_64
