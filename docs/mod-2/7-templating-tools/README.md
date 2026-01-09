@@ -119,3 +119,85 @@ kubectl describe pods mysql-1767946255-0
 ```
 
 ## Generate a Template from Helm Chart
+
+Using helm command to generate the template, you can then apply the template using `kubectl apply -f template.yaml` 
+
+### Installing argo-cd using helm template
+
+#### Setting up helm for argo-cd
+
+Adding repo
+```
+helm repo add argo https://argoproj.github.io/argo-helm
+```
+
+Repo update
+```
+helm repo update
+```
+
+Search chart
+```
+helm repo argo/argo-cd
+```
+
+#### Generate the template
+
+Command format
+```
+helm template [application name] [repo name]/[chart name] --version [version] > template.yaml
+```
+
+Generate actual template
+```
+helm template my-argo-cd argo/argo-cd --version 9.2.4 > argo-cd-template.yaml
+```
+
+#### Generating the template with custom value
+
+Command format for getting the chart values
+```
+helm show values [repo name]/[chart name] > template-value.yaml
+```
+
+Generate actual value template
+```
+helm show values  argo/argo-cd > values.yaml
+```
+
+Then edit the required mandatory value - service config, clusterIP
+```
+  ## Server service configuration
+  service:
+    # -- Server service annotations
+    annotations: {}
+    # -- Server service labels
+    labels: {}
+    # -- Server service type
+    type: NodePort
+    # -- Server service http port for NodePort service type (only if `server.service.type` is set to "NodePort")
+    nodePortHttp: 30080
+    # -- Server service https port for NodePort service type (only if `server.service.type` is set to "NodePort")
+    nodePortHttps: 30443
+    # -- Server service http port
+    servicePortHttp: 80
+```
+
+Generate the template with custom value
+```
+helm template my-argocd argo/argo-cd -f values.yaml > argo-cd-template.yaml
+```
+
+#### Deploy the app using kubectl
+
+```
+kubectl apply -f argo-cd-template.yaml 
+```
+
+#### Remove app
+
+```
+kubectl delete -f argo-cd-template.yaml 
+```
+
+
