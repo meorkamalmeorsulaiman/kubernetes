@@ -17,6 +17,8 @@ Helm is K8s package manager, use to streamline installing and managing K8s appli
 - Description of a package
 - One or more templates containing K8s manifest file
 
+### Installing Helm
+
 Charts can be sotred locally or accessed remotely. Below is how to install helm binary by first download the binary. Prior to that confirm your architechture
 ```
 controlplane:~$ arch
@@ -32,3 +34,88 @@ controlplane:~/linux-amd64$ cd
 controlplane:~$ helm version
 version.BuildInfo{Version:"v4.0.4", GitCommit:"8650e1dad9e6ae38b41f60b712af9218a0d8cc11", GitTreeState:"clean", GoVersion:"go1.25.5", KubeClientVersion:"v1.34"}
 ```
+
+### Using Helm
+
+Below are the steps for using Helm
+
+#### Adding repository
+
+```
+controlplane:~$ helm repo add bitnami https://charts.bitnami.com/bitnami
+"bitnami" has been added to your repositories
+controlplane:~$ helm repo list
+NAME                    URL                                                
+kubernetes-dashboard    https://kubernetes.github.io/dashboard/            
+metrics-server          https://kubernetes-sigs.github.io/metrics-server/  
+kubelet-csr-approver    https://postfinance.github.io/kubelet-csr-approver/
+rimusz                  https://charts.rimusz.net                          
+bitnami                 https://charts.bitnami.com/bitnami 
+```
+
+#### Finding Chart
+
+Use below command to search thru the repo
+```
+helm search repo bitnami
+```
+
+Search exact package
+```
+helm search repo nginx 
+```
+
+Search exact package with it available version
+```
+helm search repo nginx --versions
+```
+
+#### Installing Chart
+
+Update the repo
+```
+helm repo update
+```
+
+Installing chart
+```
+helm install [name]/[chart]
+```
+
+Installing bitname mysql
+```
+helm install bitnami/mysql --generate-name
+```
+
+#### Manage the installed app
+
+```
+kubectl get all
+```
+
+Get details about chart
+```
+helm show chart bitnami/mysql
+```
+
+Show all command related to the chart
+```
+helm show all bitnami/mysql
+```
+
+Get the chart details
+```
+helm get all mysql-1767946255
+```
+
+How currently installed applications
+```
+helm list
+```
+
+Get the status using `kubectl`
+```
+kubectl describe pods mysql-1767946255-0
+```
+
+## Generate a Template from Helm Chart
