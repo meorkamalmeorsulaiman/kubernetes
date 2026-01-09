@@ -200,4 +200,46 @@ kubectl apply -f argo-cd-template.yaml
 kubectl delete -f argo-cd-template.yaml 
 ```
 
+## Kustomize
 
+kustomize use to apply changes to a set of resources. Filename should be `kustomization.yaml` and can be apply by using `kubectl apply -f kustomization.yaml` To use kustomize, we have to define the resource in the template as below:
+```
+resources:
+  - deployment.yaml
+  - service.yaml
+namePrefix: test-
+commonLabels:
+  environment: testing
+```
+
+The `deployment.yaml` and `service.yaml` will define all other values. Now we apply the kustomize `-k` summarize and apply both deployment and service that stated in the kustomize file
+```
+kubectl apply -k .
+```
+
+We can see the pod started
+```
+NAME                                      READY   STATUS    RESTARTS   AGE
+pod/test-nginx-friday20-dd867b57c-5cr24   1/1     Running   0          29s
+pod/test-nginx-friday20-dd867b57c-m6wc2   1/1     Running   0          29s
+pod/test-nginx-friday20-dd867b57c-xhcs6   1/1     Running   0          29s
+
+NAME                          TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
+service/kubernetes            ClusterIP   10.96.0.1        <none>        443/TCP   11m
+service/test-nginx-friday20   ClusterIP   10.107.237.240   <none>        80/TCP    29s
+
+NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/test-nginx-friday20   3/3     3            3           29s
+
+NAME                                            DESIRED   CURRENT   READY   AGE
+replicaset.apps/test-nginx-friday20-dd867b57c   3         3         3       29s
+```
+
+We validate the label, should matched what stated in the kustomize
+```
+controlplane:~/cka/kustomize-demo$ kubectl get deploy --show-labels
+NAME                  READY   UP-TO-DATE   AVAILABLE   AGE     LABELS
+test-nginx-friday20   3/3     3            3           3m11s   environment=testing,k8s-app=nginx-friday20
+```
+
+## Lab Practice
