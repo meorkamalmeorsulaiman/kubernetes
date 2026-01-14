@@ -253,3 +253,76 @@ Events:
   ----     ------            ----  ----               -------
   Warning  FailedScheduling  31s   default-scheduler  0/6 nodes are available: 3 node(s) didn't match pod affinity rules, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 6 Preemption is not helpful for scheduling.
 ```
+
+### Anti-Affinity
+
+First we unable relabel the node to SG zone
+```
+ansible@CTRL-01:~$ kubectl label node wrk-03 topology.kubernetes.io/zone=SG --overwrite=true
+node/wrk-03 labeled
+ansible@CTRL-01:~$ kubectl get node wrk-03 --show-labels
+NAME     STATUS   ROLES    AGE    VERSION   LABELS
+wrk-03   Ready    <none>   2d3h   v1.34.3   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,colors=BLUE,dc=primary,kubernetes.io/arch=amd64,kubernetes.io/hostname=wrk-03,kubernetes.io/os=linux,topology.kubernetes.io/zone=SG
+```
+
+Then we run a Pod with a `backend` label on `wrk-03`
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-tier-be
+  labels:
+    tier: backend
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: colors
+            operator: In
+            values:
+            - BLUE
+  containers:
+  - name: nginx-container
+    image: nginx
+```
+
+Validate it run on SG nodes
+```
+ansible@CTRL-01:~$ kubectl get pods web-tier-be -o wide
+NAME          READY   STATUS    RESTARTS   AGE   IP             NODE     NOMINATED NODE   READINESS GATES
+web-tier-be   1/1     Running   0          14s   172.16.108.3   wrk-03   <none>           <none>
+```
+
+We run a pod with Anit-Affinity matches Pod `backend` in SG zone
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: anti-affinity-backend
+spec:
+  affinity:
+    podAntiAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+            - key: tier
+              operator: In
+              values:
+              - backend
+          topologyKey: topology.kubernetes.io/zone
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+```
+
+It will run on `MY` zone as use preferred and we have `backend` pod in `SG` zone 
+```
+ansible@CTRL-01:~$ kubectl get pods anti-affinity-backend -o wide
+NAME                    READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+anti-affinity-backend   1/1     Running   0          46s   172.16.89.200   wrk-01   <none>           <none>
+```
