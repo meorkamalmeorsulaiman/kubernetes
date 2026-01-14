@@ -119,7 +119,7 @@ NAME     STATUS   ROLES    AGE   VERSION
 wrk-02   Ready    <none>   47h   v1.34.3
 ```
 
-Validate the pod deployment
+Validate the pod assignement
 ```
 ansible@CTRL-01:~$ kubectl get pods -o wide
 NAME             READY   STATUS    RESTARTS   AGE   IP             NODE     NOMINATED NODE   READINESS GATES
@@ -128,4 +128,51 @@ affinity-green   1/1     Running   0          38s   172.16.19.65   wrk-02   <non
 
 ### Node affinity - Options 2
 
+Below is the `nodeAffnity` example where Pod assigned to node that is label with `colors` = `PURPLE` with weight. Prior to that, none of the workers labelled with `PURPLE`:
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: affinity-weight
+spec:
+  affinity:
+    nodeAffinity:
+      preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        preference:
+          matchExpressions:
+          - key: colors
+            operator: In
+            values:
+            - RED
+      - weight: 50
+        preference:
+          matchExpressions:
+          - key: colors
+            operator: In
+            values:
+            - BLUE    
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+```
+
+Worker has been labelled:
+```
+ansible@CTRL-01:~$ kubectl get nodes -l colors=RED
+NAME     STATUS   ROLES    AGE   VERSION
+wrk-01   Ready    <none>   47h   v1.34.3
+ansible@CTRL-01:~$ kubectl get nodes -l colors=BLUE
+NAME     STATUS   ROLES    AGE   VERSION
+wrk-03   Ready    <none>   47h   v1.34.3
+```
+
+Validate pod assignement and highest weight should be selected
+```
+ansible@CTRL-01:~$ kubectl get pods -o wide
+NAME              READY   STATUS    RESTARTS   AGE   IP             NODE     NOMINATED NODE   READINESS GATES
+affinity-green    1/1     Running   0          11m   172.16.19.65   wrk-02   <none>           <none>
+affinity-weight   1/1     Running   0          18s   172.16.108.1   wrk-03   <none>           <none>
+```
 
