@@ -80,7 +80,7 @@ It a advanced scheduler rules. `Node` affinity use as a constrain for a node to 
 
 A Pod that has a `nodeAffinity` label will only assigned to nodes that matches the label. A Pod that has a `podAffinity` label will only assigned to nodes that run a Pods that matching label.
 
-2 different statements that can be use to define node affinity:
+2 different options that can be use to define node affinity:
 1. `requiredDuringSchedulingIgnoredDuringExecution` - requires the node to meet the constraint that is defined.
 2. `preferredDuringSchedulingIgnoredDuringExecution` - defines a soft affinity that is ignored it it cannot be fulfilled, priority can be assigned to define priorities - weight
 
@@ -88,12 +88,14 @@ Affinity is applied while sheduling Pods and cant be change on Pod that has been
 
 To define affinity label, a `matchExporession` is used to define a `key`, an `operator` as well as optionally one or more values. 
 
+### Node Affinity - Options 1
+
 Below is the `nodeAffnity` example where Pod assigned to node that is label with `colors` = `GREEN` Prior to that, the worker already labelled:
 ```
 apiVersion: v1
 kind: Pod
 metadata:
-  name: nginx
+  name: affinity-green
 spec:
   affinity:
     nodeAffinity:
@@ -109,4 +111,21 @@ spec:
     image: nginx
     imagePullPolicy: IfNotPresent
 ```
+
+Worker that has been labelled
+```
+ansible@CTRL-01:~$ kubectl get nodes -l colors=GREEN
+NAME     STATUS   ROLES    AGE   VERSION
+wrk-02   Ready    <none>   47h   v1.34.3
+```
+
+Validate the pod deployment
+```
+ansible@CTRL-01:~$ kubectl get pods -o wide
+NAME             READY   STATUS    RESTARTS   AGE   IP             NODE     NOMINATED NODE   READINESS GATES
+affinity-green   1/1     Running   0          38s   172.16.19.65   wrk-02   <none>           <none>
+```
+
+### Node affinity - Options 2
+
 
