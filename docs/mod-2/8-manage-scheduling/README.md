@@ -73,3 +73,38 @@ Events:
   Normal  Created    4s    kubelet            Created container: nginx
   Normal  Started    4s    kubelet            Started container nginx
 ```
+
+## Affinity and anti-Affinity Rules
+
+It a advanced scheduler rules. `Node` affinity use as a constrain for a node to run a Pod by matching the labels attached to the nodes. `Inter-Pod` affinity constrains nodes to run a Pod by matching the labels of existing Pods already running on that node. `Anti-affinity` can only applied between Pods so that are not run together.
+
+A Pod that has a `nodeAffinity` label will only assigned to nodes that matches the label. A Pod that has a `podAffinity` label will only assigned to nodes that run a Pods that matching label.
+
+2 different statements that can be use to define node affinity:
+1. `requiredDuringSchedulingIgnoredDuringExecution` - requires the node to meet the constraint that is defined, priority can be assigned to define priorities - weight
+2. `preferredDuringSchedulingIgnoredDuringExecution` - defines a soft affinity that is ignored it it cannot be fulfilled
+
+Affinity is applied while sheduling Pods and cant be change on Pod that has been running.
+
+To define affinity label, a `matchExporession` is used to define a `key`, an `operator` as well as optionally one or more values. Below is the example where Pod assigned to node that is label with `colors` = `GREEN` Prior to that, the worker already labelled:
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: colors
+            operator: In
+            values:
+            - GREEN      
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+```
+
