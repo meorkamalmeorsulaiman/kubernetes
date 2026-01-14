@@ -74,19 +74,22 @@ Events:
   Normal  Started    4s    kubelet            Started container nginx
 ```
 
-## Affinity and anti-Affinity Rules
+## Affinity and Anti-Affinity Rules
 
-It a advanced scheduler rules. `Node` affinity use as a constrain for a node to run a Pod by matching the labels attached to the nodes. `Node` affnity function like `nodeSelector` but able to put more advance rule. `Inter-Pod` affinity constrains nodes to run a Pod by matching the labels of existing Pods already running on that node. `Anti-affinity` can only applied between Pods so that are not run together.
+It is an advanced scheduler rules. There are few types for affinity as below:
+1. Node Affinity
+2. Pod Affinity
+3. Anti Affinity
 
-A Pod that has a `nodeAffinity` label will only assigned to nodes that matches the label. A Pod that has a `podAffinity` label will only assigned to nodes that run a Pods that matching label.
+ `Node` affinity use as a constrain a Pod to run on a specific node. Function like `nodeSelector` able schedule your pod into a specific node. There are 2 different options of Node Affinity as below:
+1. `requiredDuringSchedulingIgnoredDuringExecution` - The scheduler can't schedule the Pod unless the rule is met.
+2. `preferredDuringSchedulingIgnoredDuringExecution` - The scheduler tries to find a node that meets the rule. If a matching node is not available, the scheduler still schedules the Pod. Weightage or priority feature available in this option.
 
-2 different options that can be use to define node affinity:
-1. `requiredDuringSchedulingIgnoredDuringExecution` - requires the node to meet the constraint that is defined.
-2. `preferredDuringSchedulingIgnoredDuringExecution` - defines a soft affinity that is ignored it it cannot be fulfilled, priority can be assigned to define priorities - weight
-
-Affinity is applied while sheduling Pods and cant be change on Pod that has been running.
-
-To define affinity label, a `matchExporession` is used to define a `key`, an `operator` as well as optionally one or more values. 
+ Inter-Pod or Pod Affinity use as a constrain to run a Pod on a specific node that matches a running Pod (the pod also has label attached). In other word, if I have a Pod-A run on a node in a Zone-C, then the new Pod will be run in any of Zone-C nodes. 
+ 
+Anti-affinity on the other hand, will avoid to run a Pod on a specific node that matches a running Pod (the pod also has label attached). In other word, if I have a Pod-A run on a node in a Zone-C, then the new Pod will be run in any nodes other than Zone-C nodes. There are 2 different options similar to Node Affinity as below:
+ 1. `requiredDuringSchedulingIgnoredDuringExecution`
+ 2. `preferredDuringSchedulingIgnoredDuringExecution`
 
 ### Node Affinity - Options 1
 
@@ -176,3 +179,77 @@ affinity-green    1/1     Running   0          11m   172.16.19.65   wrk-02   <no
 affinity-weight   1/1     Running   0          18s   172.16.108.1   wrk-03   <none>           <none>
 ```
 
+### Inter-Pod Affinity
+
+First we run a pod with a label - `frontend`
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: web-tier-fe
+  labels:
+    tier: frontend
+spec:
+  containers:
+  - name: nginx-container
+    image: nginx
+```
+
+Validate the Pod label is there
+```
+ansible@CTRL-01:~$ kubectl get pods web-tier-fe --show-labels -o wide
+NAME          READY   STATUS    RESTARTS   AGE     IP              NODE     NOMINATED NODE   READINESS GATES   LABELS
+web-tier-fe   1/1     Running   0          4m13s   172.16.89.193   wrk-01   <none>           <none>            tier=frontend
+```
+
+Then we set a label that group all the worker in a specific group, the label should be a well-known labels.
+```
+ansible@CTRL-01:~$ kubectl get nodes -l topology.kubernetes.io/zone=MY -o wide --show-labels
+NAME     STATUS   ROLES    AGE    VERSION   INTERNAL-IP      EXTERNAL-IP   OS-IMAGE             KERNEL-VERSION     CONTAINER-RUNTIME    LABELS
+wrk-01   Ready    <none>   2d3h   v1.34.3   192.168.101.21   <none>        Ubuntu 24.04.3 LTS   6.8.0-90-generic   containerd://2.2.0   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,colors=RED,dc=primary,kubernetes.io/arch=amd64,kubernetes.io/hostname=wrk-01,kubernetes.io/os=linux,topology.kubernetes.io/zone=MY
+wrk-02   Ready    <none>   2d3h   v1.34.3   192.168.101.22   <none>        Ubuntu 24.04.3 LTS   6.8.0-90-generic   containerd://2.2.0   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,colors=GREEN,dc=primary,kubernetes.io/arch=amd64,kubernetes.io/hostname=wrk-02,kubernetes.io/os=linux,topology.kubernetes.io/zone=MY
+wrk-03   Ready    <none>   2d3h   v1.34.3   192.168.101.23   <none>        Ubuntu 24.04.3 LTS   6.8.0-90-generic   containerd://2.2.0   beta.kubernetes.io/arch=amd64,beta.kubernetes.io/os=linux,colors=BLUE,dc=primary,kubernetes.io/arch=amd64,kubernetes.io/hostname=wrk-03,kubernetes.io/os=linux,topology.kubernetes.io/zone=MY
+```
+
+Below is the Inter-Pod Affinity example where the Pod will place in a zone node that has a Pod that has been labelled `frontend`:
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-affinity-frontend
+spec:
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: tier
+            operator: In
+            values:
+            - frontend
+        topologyKey: topology.kubernetes.io/zone
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+```
+
+Then we should see that the pod will run on any node within the `zone` that run the earlier pod `web-tier-fe`
+```
+ansible@CTRL-01:~$ kubectl get pods -o wide
+NAME                    READY   STATUS    RESTARTS   AGE     IP              NODE     NOMINATED NODE   READINESS GATES
+affinity-green          1/1     Running   0          4h4m    172.16.19.65    wrk-02   <none>           <none>
+affinity-weight         1/1     Running   0          3h53m   172.16.108.1    wrk-03   <none>           <none>
+pod-affinity-frontend   1/1     Running   0          7s      172.16.19.69    wrk-02   <none>           <none>
+web-tier-fe             1/1     Running   0          45m     172.16.89.193   wrk-01   <none>           <none>
+```
+
+If we change the affinity to other than `frontend` and the result should failed as below:
+```
+ansible@CTRL-01:~$ kubectl describe pods pod-affinity-frontend --show-events
+<<snippet>>
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  31s   default-scheduler  0/6 nodes are available: 3 node(s) didn't match pod affinity rules, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 6 Preemption is not helpful for scheduling.
+```
