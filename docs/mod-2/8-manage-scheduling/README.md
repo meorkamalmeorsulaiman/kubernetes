@@ -326,3 +326,70 @@ ansible@CTRL-01:~$ kubectl get pods anti-affinity-backend -o wide
 NAME                    READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
 anti-affinity-backend   1/1     Running   0          46s   172.16.89.200   wrk-01   <none>           <none>
 ```
+
+## Taint and Toleration
+
+Taint is the opposite of Node AFfinity, it allow a node to repel a set of pods. Tolerations are applied to pods. Tolerations allow the scheduler to schedule pods with matching taints
+
+Below setting up Taint on a node with a taint key. `NoSchedule` mean that no pod is allowed to be scheduled on `node01` unless it has matching toleration: 
+```
+kubectl taint node node01 tolerate=yes:NoSchedule
+```
+
+Check the taint key value:
+```
+controlplane:~$ kubectl describe node node01 | grep -i taints
+Taints:             tolerate=yes:NoSchedule
+```
+
+Now we run a pod without a toleration
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: without-toleration
+  labels:
+    env: test
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+```
+
+The pod should not be able to run
+```
+controlplane:~$ kubectl get pod without-toleration 
+NAME                 READY   STATUS    RESTARTS   AGE
+without-toleration   0/1     Pending   0          62s
+```
+
+Now we run a pod with toleration
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-toleration
+  labels:
+    env: test
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+  tolerations:
+  - key: "tolerate"
+    operator: "Equal"
+    value: "yes"
+    effect: "NoSchedule"
+```
+
+Pod should be able to run
+```
+controlplane:~$ kubectl get pod with-toleration 
+NAME              READY   STATUS    RESTARTS   AGE
+with-toleration   1/1     Running   0          6s
+```
+
+Details about taint and toleration on: [Taint and Toleration](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
+
