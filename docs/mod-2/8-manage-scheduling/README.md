@@ -393,3 +393,5 @@ with-toleration   1/1     Running   0          6s
 
 Details about taint and toleration on: [Taint and Toleration](https://kubernetes.io/docs/concepts/scheduling-eviction/taint-and-toleration/)
 
+## Manage Quota
+
