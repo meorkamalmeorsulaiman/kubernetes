@@ -703,6 +703,30 @@ Events:            <none>
 
 ### Use priority class
 
-Example of spec file - pod-high:
+Example of spec file `high-priority.yaml`:
 ```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: high-priority
+  labels:
+    env: test
+spec:
+  containers:
+  - name: high-priority
+    image: nginx
+    imagePullPolicy: IfNotPresent
+  priorityClassName: high
+```
+
+Apply and validate the priority
+```
+controlplane:~$ kubectl describe pod high-priority  | grep -i priority
+Name:                 high-priority
+Priority:             1000
+Priority Class Name:  high
+  high-priority:
+  Normal  Scheduled  56s   default-scheduler  Successfully assigned default/high-priority to node01
+  Normal  Created    50s   kubelet            Created container: high-priority
+  Normal  Started    49s   kubelet            Started container high-priority
 ```
