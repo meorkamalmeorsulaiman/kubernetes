@@ -444,8 +444,7 @@ pods        0     3
 
 Create a deployment
 ```
-controlplane:~$ kubectl create deployment nginx --image=nginx --replicas=3 -n limited
-deployment.apps/nginx created
+kubectl create deployment nginx --image=nginx --replicas=3 -n limited
 ```
 
 No pods created
@@ -510,18 +509,23 @@ controlplane:~$ kubectl set resources deploy nginx --requests cpu=100m,memory=5M
 deployment.apps/nginx resource requirements updated
 ```
 
-Check the deployment - it failed because we hit the quota
+Check the deployment - it failed with 1 pod created 
 ```
 controlplane:~$ kubectl get all -n limited
-NAME                        READY   STATUS             RESTARTS      AGE
-pod/nginx-877c5d664-8hpgr   0/1     CrashLoopBackOff   3 (20s ago)   79s
+NAME                        READY   STATUS    RESTARTS   AGE
+pod/nginx-877c5d664-dx662   1/1     Running   0          10s
 
 NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/nginx   0/3     1            0           10m
+deployment.apps/nginx   1/3     1            1           68s
 
 NAME                               DESIRED   CURRENT   READY   AGE
-replicaset.apps/nginx-66686b6766   2         0         0       10m
-replicaset.apps/nginx-877c5d664    2         1         0       79s
+replicaset.apps/nginx-66686b6766   2         0         0       68s
+replicaset.apps/nginx-877c5d664    2         1         1       10s
+```
+
+We hit the cpu quota limited 
+
+```
 controlplane:~$ kubectl describe quota limited-quota -n limited
 Name:       limited-quota
 Namespace:  limited
@@ -531,4 +535,45 @@ cpu         100m  100m
 memory      5Mi   500Mi
 pods        1     3
 ```
+
+Edit the cpu limit to 500m
+```
+kubectl edit quota limited-quota -n limited
+```
+
+Check quota spec
+```
+controlplane:~$ kubectl describe quota limited-quota -n limited
+Name:       limited-quota
+Namespace:  limited
+Resource    Used  Hard
+--------    ----  ----
+cpu         100m  500m
+memory      5Mi   500Mi
+pods        1     3
+```
+
+Deleted and redeploy the deployment
+```
+kubectl delete deploy nginx -n limited
+kubectl create deploy nginx --image=nginx --replicas=3 -n limited
+kubectl set resources deploy nginx --requests cpu=100m,memory=5Mi --limits cpu=200m,memory=20Mi -n limited
+```
+
+Check the deployement status
+```
+controlplane:~$ kubectl get all -n limited
+NAME                        READY   STATUS    RESTARTS     AGE
+pod/nginx-877c5d664-267nq   1/1     Running   1 (5s ago)   14s
+pod/nginx-877c5d664-lddqq   1/1     Running   0            10s
+pod/nginx-877c5d664-qgfhb   1/1     Running   1 (8s ago)   16s
+
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/nginx   3/3     3            3           20s
+
+NAME                               DESIRED   CURRENT   READY   AGE
+replicaset.apps/nginx-66686b6766   0         0         0       20s
+replicaset.apps/nginx-877c5d664    3         3         3       16s
+```
+
 
