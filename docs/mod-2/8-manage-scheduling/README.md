@@ -460,34 +460,7 @@ replicaset.apps/nginx-66686b6766   3         0         0       49s
 Check the deployment events - the problem related to the deployment resource restriction set
 ```
 controlplane:~$ kubectl describe rs -n limited nginx-66686b6766
-Name:           nginx-66686b6766
-Namespace:      limited
-Selector:       app=nginx,pod-template-hash=66686b6766
-Labels:         app=nginx
-                pod-template-hash=66686b6766
-Annotations:    deployment.kubernetes.io/desired-replicas: 3
-                deployment.kubernetes.io/max-replicas: 4
-                deployment.kubernetes.io/revision: 1
-Controlled By:  Deployment/nginx
-Replicas:       0 current / 3 desired
-Pods Status:    0 Running / 0 Waiting / 0 Succeeded / 0 Failed
-Pod Template:
-  Labels:  app=nginx
-           pod-template-hash=66686b6766
-  Containers:
-   nginx:
-    Image:         nginx
-    Port:          <none>
-    Host Port:     <none>
-    Environment:   <none>
-    Mounts:        <none>
-  Volumes:         <none>
-  Node-Selectors:  <none>
-  Tolerations:     <none>
-Conditions:
-  Type             Status  Reason
-  ----             ------  ------
-  ReplicaFailure   True    FailedCreate
+<<Snippet>>
 Events:
   Type     Reason        Age                  From                   Message
   ----     ------        ----                 ----                   -------
@@ -579,3 +552,71 @@ replicaset.apps/nginx-877c5d664    3         3         3       16s
 ## LimitRange
 
 A LimitRange is a policy to constrain the resource allocations (limits and requests) that you can specify for each applicable object kind (such as Pod or PersistentVolumeClaim) in a namespace. Quota applies in the entire namespace. More about LimitRange on [K8s Docs - LimitRanges](https://kubernetes.io/docs/concepts/policy/limit-range/)
+
+### Working with LimitRange
+
+Create a namespace
+```
+kubectl create ns limit-range
+```
+
+Create the limit range spec then apply it within the namespace
+```
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: mem-limit-range
+spec:
+  limits:
+  - default:
+      memory: 512Mi
+    defaultRequest:
+      memory: 256Mi
+    type: Container
+```
+
+Validate the limitrage applied
+```
+controlplane:~/cka$ kubectl describe ns limit-range
+Name:         limit-range
+Labels:       kubernetes.io/metadata.name=limit-range
+Annotations:  <none>
+Status:       Active
+
+No resource quota.
+
+Resource Limits
+ Type       Resource  Min  Max  Default Request  Default Limit  Max Limit/Request Ratio
+ ----       --------  ---  ---  ---------------  -------------  -----------------------
+ Container  memory    -    -    256Mi            512Mi          -
+```
+
+### Using pod with limitRange
+
+Run a pod withint the namespace
+```
+kubectl run limit-pod --image=nginx -n limit-range
+```
+
+Validate pod applied with the limit
+```
+controlplane:~/cka$ kubectl describe pod limit-pod -n limit-range
+<<Snippet>>
+  limit-pod:
+    Container ID:   containerd://461e999089362870cf60c29bd73d82c1fe3c3757b883111128ac80f1633f9f11
+    Image:          nginx
+    Image ID:       docker.io/library/nginx@sha256:c881927c4077710ac4b1da63b83aa163937fb47457950c267d92f7e4dedf4aec
+    Port:           <none>
+    Host Port:      <none>
+    State:          Running
+      Started:      Mon, 19 Jan 2026 07:52:07 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      memory:  512Mi
+    Requests:
+      memory:     256Mi
+    Environment:  <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-5zdtf (ro
+```
