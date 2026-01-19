@@ -730,3 +730,36 @@ Priority Class Name:  high
   Normal  Created    50s   kubelet            Created container: high-priority
   Normal  Started    49s   kubelet            Started container high-priority
 ```
+
+### Use default priority
+
+Test default priority to a pod without using the priority class `default-priority.yaml`
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: default-priority
+  labels:
+    env: test
+spec:
+  containers:
+  - name: default-priority
+    image: nginx
+    imagePullPolicy: IfNotPresent
+```
+
+Apply and check the priority applied
+```
+controlplane:~$ kubectl describe pod default-priority | grep -i priority
+Name:                 default-priority
+Priority:             100
+Priority Class Name:  mid
+  default-priority:
+  Normal  Scheduled  11s   default-scheduler  Successfully assigned default/default-priority to node01
+  Normal  Created    9s    kubelet            Created container: default-priority
+  Normal  Started    9s    kubelet            Started container default-priority
+```
+
+## Lab Practice
+
+Taint a node and pod matches the toleration will be able to schedule on the tainted node.
