@@ -664,3 +664,5 @@ Containers:
       /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-8d2ph (ro)
 <<Snippet>>
 ```
+
+## Pod Priorities
