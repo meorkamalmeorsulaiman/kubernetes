@@ -395,3 +395,140 @@ Details about taint and toleration on: [Taint and Toleration](https://kubernetes
 
 ## Manage Quota
 
+A resource quota, defined by a ResourceQuota object, provides constraints that limit aggregate resource consumption per namespace. A ResourceQuota can also limit the quantity of objects that can be created in a namespace by API kind, as well as the total amount of infrastructure resources that may be consumed by API objects found in that namespace.
+
+### Setting up Quota
+
+Create a namespace
+```
+kubectl create namespace limited
+```
+
+Set the quota for the new namespace, it a hard quota with min pod = 3 and cpu equal to 100 milicoreee and memory is 5000Mib apply to namespace limited
+```
+kubectl create quota limited-quota --hard pods=3,cpu=100m,memory=500Mi -n limited
+```
+
+Check the quota applied 
+```
+controlplane:~$ kubectl describe ns limited
+Name:         limited
+Labels:       kubernetes.io/metadata.name=limited
+Annotations:  <none>
+Status:       Active
+
+Resource Quotas
+  Name:     limited-quota
+  Resource  Used  Hard
+  --------  ---   ---
+  cpu       0     100m
+  memory    0     500Mi
+  pods      0     3
+
+No LimitRange resource.
+```
+
+Check quota details
+```
+controlplane:~$ kubectl describe quota limited-quota -n limited
+Name:       limited-quota
+Namespace:  limited
+Resource    Used  Hard
+--------    ----  ----
+cpu         0     100m
+memory      0     500Mi
+pods        0     3
+```
+
+### Testing out Quota
+
+Create a deployment
+```
+controlplane:~$ kubectl create deployment nginx --image=nginx --replicas=3 -n limited
+deployment.apps/nginx created
+```
+
+No pods created
+```
+controlplane:~$ kubectl get all -n limited
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/nginx   0/3     0            0           49s
+
+NAME                               DESIRED   CURRENT   READY   AGE
+replicaset.apps/nginx-66686b6766   3         0         0       49s
+```
+
+Check the deployment events - the problem related to the deployment resource restriction set
+```
+controlplane:~$ kubectl describe rs -n limited nginx-66686b6766
+Name:           nginx-66686b6766
+Namespace:      limited
+Selector:       app=nginx,pod-template-hash=66686b6766
+Labels:         app=nginx
+                pod-template-hash=66686b6766
+Annotations:    deployment.kubernetes.io/desired-replicas: 3
+                deployment.kubernetes.io/max-replicas: 4
+                deployment.kubernetes.io/revision: 1
+Controlled By:  Deployment/nginx
+Replicas:       0 current / 3 desired
+Pods Status:    0 Running / 0 Waiting / 0 Succeeded / 0 Failed
+Pod Template:
+  Labels:  app=nginx
+           pod-template-hash=66686b6766
+  Containers:
+   nginx:
+    Image:         nginx
+    Port:          <none>
+    Host Port:     <none>
+    Environment:   <none>
+    Mounts:        <none>
+  Volumes:         <none>
+  Node-Selectors:  <none>
+  Tolerations:     <none>
+Conditions:
+  Type             Status  Reason
+  ----             ------  ------
+  ReplicaFailure   True    FailedCreate
+Events:
+  Type     Reason        Age                  From                   Message
+  ----     ------        ----                 ----                   -------
+  Warning  FailedCreate  3m35s                replicaset-controller  Error creating: pods "nginx-66686b6766-tftkx" is forbidden: failed quota: limited-quota: must specify cpu for: nginx; memory for: nginx
+  Warning  FailedCreate  3m35s                replicaset-controller  Error creating: pods "nginx-66686b6766-7k2pd" is forbidden: failed quota: limited-quota: must specify cpu for: nginx; memory for: nginx
+  Warning  FailedCreate  3m35s                replicaset-controller  Error creating: pods "nginx-66686b6766-p8w5h" is forbidden: failed quota: limited-quota: must specify cpu for: nginx; memory for: nginx
+  Warning  FailedCreate  3m35s                replicaset-controller  Error creating: pods "nginx-66686b6766-r5gp5" is forbidden: failed quota: limited-quota: must specify cpu for: nginx; memory for: nginx
+  Warning  FailedCreate  3m35s                replicaset-controller  Error creating: pods "nginx-66686b6766-nd5t6" is forbidden: failed quota: limited-quota: must specify cpu for: nginx; memory for: nginx
+  Warning  FailedCreate  3m35s                replicaset-controller  Error creating: pods "nginx-66686b6766-zb8qx" is forbidden: failed quota: limited-quota: must specify cpu for: nginx; memory for: nginx
+  Warning  FailedCreate  3m35s                replicaset-controller  Error creating: pods "nginx-66686b6766-9szmm" is forbidden: failed quota: limited-quota: must specify cpu for: nginx; memory for: nginx
+  Warning  FailedCreate  3m35s                replicaset-controller  Error creating: pods "nginx-66686b6766-nsgjx" is forbidden: failed quota: limited-quota: must specify cpu for: nginx; memory for: nginx
+  Warning  FailedCreate  3m34s                replicaset-controller  Error creating: pods "nginx-66686b6766-klfgc" is forbidden: failed quota: limited-quota: must specify cpu for: nginx; memory for: nginx
+  Warning  FailedCreate  51s (x7 over 3m33s)  replicaset-controller  (combined from similar events): Error creating: pods "nginx-66686b6766-sbbmt" is forbidden: failed quota: limited-quota: must specify cpu for: nginx; memory for: nginx
+```
+
+Let's set the resource on the deployment
+```
+controlplane:~$ kubectl set resources deploy nginx --requests cpu=100m,memory=5Mi --limits cpu=200m,memory=20Mi -n limited
+deployment.apps/nginx resource requirements updated
+```
+
+Check the deployment - it failed because we hit the quota
+```
+controlplane:~$ kubectl get all -n limited
+NAME                        READY   STATUS             RESTARTS      AGE
+pod/nginx-877c5d664-8hpgr   0/1     CrashLoopBackOff   3 (20s ago)   79s
+
+NAME                    READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/nginx   0/3     1            0           10m
+
+NAME                               DESIRED   CURRENT   READY   AGE
+replicaset.apps/nginx-66686b6766   2         0         0       10m
+replicaset.apps/nginx-877c5d664    2         1         0       79s
+controlplane:~$ kubectl describe quota limited-quota -n limited
+Name:       limited-quota
+Namespace:  limited
+Resource    Used  Hard
+--------    ----  ----
+cpu         100m  100m
+memory      5Mi   500Mi
+pods        1     3
+```
+
