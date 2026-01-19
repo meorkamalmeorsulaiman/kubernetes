@@ -665,4 +665,44 @@ Containers:
 <<Snippet>>
 ```
 
-## Pod Priorities
+## Pod Priorities and Preemption
+
+Pods can have priority. Priority indicates the importance of a Pod relative to other Pods. Preemption allow a Pod to be schedule by removing other lower priority Pods in a node (evicted). Pod with higher value will be having a higher priority. More details on priority and preemption [Priority and Preemption](https://kubernetes.io/docs/concepts/scheduling-eviction/pod-priority-preemption/)
+
+### Working with Pod Priority
+
+Create a priority class named `high` with value of 1000 and preemption disabled
+```
+kubectl create priorityclass high --value=1000 --description="High priority" --preemption-policy="Never"
+```
+
+Create a default priority class name `mid` with value of 100 that will applied by default to all pod
+```
+kubectl create priorityclass mid --value=100 --description="Mid priority - default" --global-default=true
+```
+
+Validate priority class
+```
+controlplane:~$ kubectl describe priorityclass high 
+Name:              high
+Value:             1000
+GlobalDefault:     false
+PreemptionPolicy:  Never
+Description:       High priority
+Annotations:       <none>
+Events:            <none>
+controlplane:~$ kubectl describe priorityclass mid
+Name:              mid
+Value:             100
+GlobalDefault:     true
+PreemptionPolicy:  PreemptLowerPriority
+Description:       Mid priority - default
+Annotations:       <none>
+Events:            <none>
+```
+
+### Use priority class
+
+Example of spec file - pod-high:
+```
+```
