@@ -576,4 +576,6 @@ replicaset.apps/nginx-66686b6766   0         0         0       20s
 replicaset.apps/nginx-877c5d664    3         3         3       16s
 ```
 
+## LimitRange
 
+A LimitRange is a policy to constrain the resource allocations (limits and requests) that you can specify for each applicable object kind (such as Pod or PersistentVolumeClaim) in a namespace. Quota applies in the entire namespace. More about LimitRange on [K8s Docs - LimitRanges](https://kubernetes.io/docs/concepts/policy/limit-range/)
