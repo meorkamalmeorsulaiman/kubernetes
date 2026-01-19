@@ -551,7 +551,7 @@ replicaset.apps/nginx-877c5d664    3         3         3       16s
 
 ## LimitRange
 
-A LimitRange is a policy to constrain the resource allocations (limits and requests) that you can specify for each applicable object kind (such as Pod or PersistentVolumeClaim) in a namespace. Quota applies in the entire namespace. More about LimitRange on [K8s Docs - LimitRanges](https://kubernetes.io/docs/concepts/policy/limit-range/)
+Quota is a namespace wide setting that control the entire namespace. A LimitRange is a policy to constrain the resource allocations (limits and requests) that you can specify for each applicable object kind (such as Pod or PersistentVolumeClaim) in a namespace. More about LimitRange on [K8s Docs - LimitRanges](https://kubernetes.io/docs/concepts/policy/limit-range/)
 
 ### Working with LimitRange
 
@@ -591,7 +591,7 @@ Resource Limits
  Container  memory    -    -    256Mi            512Mi          -
 ```
 
-### Using pod with limitRange
+### Using pod with limitRange applied on namespace
 
 Run a pod withint the namespace
 ```
@@ -619,4 +619,48 @@ controlplane:~/cka$ kubectl describe pod limit-pod -n limit-range
     Environment:  <none>
     Mounts:
       /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-5zdtf (ro
+```
+
+### Using limitrange on a Pod
+
+Example spec `example-pod-level-limit.yaml`:
+```
+apiVersion: v1
+kind: Pod
+metadata:
+  name: example-pod-level-limit
+spec:
+  containers:
+  - name: example-pod-level-limit
+    image: nginx
+    resources:
+      requests:
+        memory: 256Mi
+      limits:
+        memory: 256Mi
+```
+
+Apply the pod within the namespace. Check the limit in the pod
+```
+controlplane:~/cka$ kubectl describe pod example-pod-level-limit -n limit-range
+<<Snippet>>
+Containers:
+  example-pod-level-limit:
+    Container ID:   containerd://94bacd727e692c2e60b258e00205940cbad54bbe50616c0d1a2f54745266cfdd
+    Image:          nginx
+    Image ID:       docker.io/library/nginx@sha256:c881927c4077710ac4b1da63b83aa163937fb47457950c267d92f7e4dedf4aec
+    Port:           <none>
+    Host Port:      <none>
+    State:          Running
+      Started:      Mon, 19 Jan 2026 08:04:48 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      memory:  256Mi
+    Requests:
+      memory:     256Mi
+    Environment:  <none>
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from kube-api-access-8d2ph (ro)
+<<Snippet>>
 ```
