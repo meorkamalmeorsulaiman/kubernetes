@@ -43,3 +43,76 @@ ansible@CTRL-01:~$ ps afx | grep service-cluster-ip-range
    8939 ?        Ssl    6:11  \_ kube-apiserver --advertise-address=192.168.101.11 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --enable-admission-plugins=NodeRestriction --enable-bootstrap-token-auth=true --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key --etcd-servers=https://127.0.0.1:2379 --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key --requestheader-allowed-names=front-proxy-client --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt --requestheader-extra-headers-prefix=X-Remote-Extra- --requestheader-group-headers=X-Remote-Group --requestheader-username-headers=X-Remote-User --secure-port=6443 --service-account-issuer=https://kubernetes.default.svc.cluster.local --service-account-key-file=/etc/kubernetes/pki/sa.pub --service-account-signing-key-file=/etc/kubernetes/pki/sa.key --service-cluster-ip-range=10.96.0.0/12 --tls-cert-file=/etc/kubernetes/pki/apiserver.crt --tls-private-key-file=/etc/kubernetes/pki/apiserver.key
 ```
 
+## Service to Access Application
+
+### Services
+
+It's a resource to provice access to Pods. Different types of Service can be configured:
+1. ClusterIP - Expose internally and reachable within the cluster
+2. NodePort - Port mapping to allow external access to the pod
+3. Loadbalancer - Load balancing traffic to NodePort or Cluster-IP based Services
+4. ExternalName - Service discovery like that maps DNS names
+
+#### Setting up Services
+
+Create a deployment
+```
+kubectl create deploy web-service --image=nginx --replicas=3
+```
+
+Check deployment - should be ready
+```
+ansible@CTRL-01:~$ kubectl get pods --selector app=web-service -o wide
+NAME                           READY   STATUS    RESTARTS   AGE   IP              NODE     NOMINATED NODE   READINESS GATES
+web-service-5899545bbb-9q7g2   1/1     Running   0          71s   172.16.19.65    wrk-02   <none>           <none>
+web-service-5899545bbb-cbgzf   1/1     Running   0          71s   172.16.108.1    wrk-03   <none>           <none>
+web-service-5899545bbb-f7vnq   1/1     Running   0          71s   172.16.89.194   wrk-01   <none>           <none>
+```
+
+Create a service for `web-service` deployment to expose externally - `NodePort` using port 80
+```
+kubectl expose deploy web-service --type=NodePort --port=80
+```
+
+Check the service details
+```
+ansible@CTRL-01:~$ kubectl describe svc web-service
+Name:                     web-service
+Namespace:                default
+Labels:                   app=web-service
+Annotations:              <none>
+Selector:                 app=web-service
+Type:                     NodePort
+IP Family Policy:         SingleStack
+IP Families:              IPv4
+IP:                       10.100.14.215
+IPs:                      10.100.14.215
+Port:                     <unset>  80/TCP
+TargetPort:               80/TCP
+NodePort:                 <unset>  31839/TCP
+Endpoints:                172.16.108.1:80,172.16.89.194:80,172.16.19.65:80
+Session Affinity:         None
+External Traffic Policy:  Cluster
+Internal Traffic Policy:  Cluster
+Events:                   <none>
+```
+
+Above details explained as below:
+- `Port` is the port on the service
+- `TargetPort` is the actual container port
+- `NodePort` is the externally expose port
+The flow from external should be `Nodeport` > `Port` > `TargetPort` > `Endpoints`
+
+We can test the web access on any of the node IP address.
+```
+ansible@CTRL-01:~$ curl -sI http://192.168.101.21:31839
+HTTP/1.1 200 OK
+Server: nginx/1.29.4
+Date: Wed, 21 Jan 2026 05:54:03 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 09 Dec 2025 18:28:10 GMT
+Connection: keep-alive
+ETag: "69386a3a-267"
+Accept-Ranges: bytes
+```
