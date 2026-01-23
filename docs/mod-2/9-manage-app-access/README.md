@@ -204,29 +204,92 @@ ansible@CTRL-01:~$ cat /etc/hosts | grep svc
 
 Test
 ```
-ansible@CTRL-01:~$ curl nginxsvc.info:8080
-Handling connection for 8080
-<!DOCTYPE html>
-<html>
-<head>
-<title>Welcome to nginx!</title>
-<style>
-html { color-scheme: light dark; }
-body { width: 35em; margin: 0 auto;
-font-family: Tahoma, Verdana, Arial, sans-serif; }
-</style>
-</head>
-<body>
-<h1>Welcome to nginx!</h1>
-<p>If you see this page, the nginx web server is successfully installed and
-working. Further configuration is required.</p>
+ansible@CTRL-01:~$ curl -sI nginxsvc.info:8080
+HTTP/1.1 200 OK
+Date: Fri, 23 Jan 2026 13:49:14 GMT
+Content-Type: text/html
+Content-Length: 615
+Connection: keep-alive
+Last-Modified: Tue, 09 Dec 2025 18:28:10 GMT
+ETag: "69386a3a-267"
+Accept-Ranges: bytes
+```
 
-<p>For online documentation and support please refer to
-<a href="http://nginx.org/">nginx.org</a>.<br/>
-Commercial support is available at
-<a href="http://nginx.com/">nginx.com</a>.</p>
+## Ingress
 
-<p><em>Thank you for using nginx.</em></p>
-</body>
-</html>
+Ingress rule catch incoming traffic that matches a specific path and optional hostname and connects that to a Service and port. To create rule use `kubectl create ingress` command. Different paths can be defined on the same host. 
+
+### IngressClass
+
+In one cluster, different ingress controllet can host and each run their own configuration. Controllers can be included in an `IngressClass`. When creating rule, use the `--class` option to implement the role on a specific Ingress controller.
+
+#### Working with Rule
+
+This rule is to demonstrate virtual host. 1st create deployment and Serivce with NodePort
+```
+kubectl create deploy web-service --image=nginx --replicas=3
+kubectl expose deploy web-service --type=NodePort --port=80
+```
+
+Create ingress
+```
+kubectl create ingress web-service-ingress --rule="/=web-service:80" --rule="/hello=newdep:8080"
+```
+
+Add hosts file
+```
+ansible@CTRL-01:~$ cat /etc/hosts | grep web-service
+127.0.0.1 nginxsvc.info web-service.info
+```
+
+Validate the ingress and we can see wildcard in the hosts
+```
+ansible@CTRL-01:~$ kubectl get ingress
+NAME                  CLASS    HOSTS           ADDRESS   PORTS   AGE
+nginxsvc              nginx    nginxsvc.info             80      5h7m
+web-service-ingress   <none>   *                         80      2m8s
+```
+
+See the details, the error on `/hello` path
+```
+ansible@CTRL-01:~$ kubectl describe ingress web-service-ingress
+Name:             web-service-ingress
+Labels:           <none>
+Namespace:        default
+Address:
+Ingress Class:    <none>
+Default backend:  <default>
+Rules:
+  Host        Path  Backends
+  ----        ----  --------
+  *
+              /        web-service:80 (172.16.19.67:80,172.16.89.194:80,172.16.108.2:80)
+              /hello   newdep:8080 (<error: services "newdep" not found>)
+Annotations:  <none>
+Events:       <none>
+```
+
+We deploy for `newdep`
+```
+kubectl create deploy newdep --image=gcr.io/google-sample/hello-app:2.0
+kubectl expose deploy newdep --port=8080
+```
+
+Validate the ingress again
+```
+ansible@CTRL-01:~$ kubectl describe ingress web-service-ingress
+Name:             web-service-ingress
+Labels:           <none>
+Namespace:        default
+Address:
+Ingress Class:    <none>
+Default backend:  <default>
+Rules:
+  Host        Path  Backends
+  ----        ----  --------
+  *
+              /        web-service:80 (172.16.19.67:80,172.16.89.194:80,172.16.108.2:80)
+              /hello   newdep:8080 ()
+Annotations:  <none>
+Events:       <none>
 ```
