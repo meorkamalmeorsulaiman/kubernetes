@@ -293,3 +293,6 @@ Rules:
 Annotations:  <none>
 Events:       <none>
 ```
+## Port Forwarding
+
+Use to connect apps for analyzing and troubleshooting. Foward traffic coming in to a local port on the kubectl client machine to a port that is available in a Pod. Example `kubectl port-forward mypod 5555:80` - forward local port 5555 to Pod `mypod` port 80 Then, `ctrl+z` or a `&` at the end of the command to run in the background. 
