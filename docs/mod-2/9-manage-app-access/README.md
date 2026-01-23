@@ -116,3 +116,117 @@ Connection: keep-alive
 ETag: "69386a3a-267"
 Accept-Ranges: bytes
 ```
+
+## Ingress Controller
+
+### Understanding Ingress
+
+Ingress is a service discovery that consist of two parts:
+- Physical LB available on the external network
+- An API resource that contains rules to to forward to Service resources.
+
+Exposes HTTP and HTTPS routes from outside the cluster to Services within the cluster. Ingress use `selectorLabel` in Services to forward to Pod. Traffic routing controlled by rules defined on the Ingress resource. We must have ingress controller in order to get ingress to work.
+
+### Working with Nginx Ingress Controller
+
+It installed from helm, 1st install helm
+```
+wget https://get.helm.sh/helm-v4.1.0-linux-amd64.tar.gz
+tar -xvf helm-v4.1.0-linux-amd64.tar.gz
+sudo mv linux-amd64/helm /usr/local/bin/
+helm -version
+```
+
+Proceed to install Nginx-Ingress Controller
+```
+helm upgrade --install ingress-nginx ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --namespace ingress-nginx --create-namespace
+```
+
+Check the pod
+```
+ansible@CTRL-01:~$ kubectl get pods -n ingress-nginx
+NAME                                        READY   STATUS    RESTARTS   AGE
+ingress-nginx-controller-6c657c6487-55ptn   1/1     Running   0          42s
+```
+
+Proceed to create deployment
+```
+kubectl create deploy nginxsvc --image=nginx --port=80
+```
+
+Expose the deployment, the service type should be default as ingress will manage that.
+```
+kubectl expose deploy nginxsvc --port=80
+```
+
+Check the serivce
+```
+ansible@CTRL-01:~$ kubectl describe svc nginxsvc
+Name:                     nginxsvc
+Namespace:                default
+Labels:                   app=nginxsvc
+Annotations:              <none>
+Selector:                 app=nginxsvc
+Type:                     ClusterIP
+IP Family Policy:         SingleStack
+IP Families:              IPv4
+IP:                       10.111.179.154
+IPs:                      10.111.179.154
+Port:                     <unset>  80/TCP
+TargetPort:               80/TCP
+Endpoints:                172.16.19.66:80
+Session Affinity:         None
+Internal Traffic Policy:  Cluster
+Events:                   <none>
+```
+
+Create an ingress, the rule is `nginxsvc.info/*=nginxsvc:80`
+```
+kubectl create ing nginxsvc --class=nginx --rule=nginxsvc.info/*=nginxsvc:80
+```
+
+Configure port forward all incoming request to the service, use `CTRL+Z` followed by `bg`
+```
+ansible@CTRL-01:~$ kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8080:80
+Forwarding from 127.0.0.1:8080 -> 80
+Forwarding from [::1]:8080 -> 80
+^Z
+[1]+  Stopped                 kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8080:80
+ansible@CTRL-01:~$ bg
+[1]+ kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 8080:80 &
+```
+
+Add host file
+```
+ansible@CTRL-01:~$ cat /etc/hosts | grep svc
+127.0.0.1 localhost nginxsvc.info
+```
+
+Test
+```
+ansible@CTRL-01:~$ curl nginxsvc.info:8080
+Handling connection for 8080
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+```
