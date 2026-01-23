@@ -233,40 +233,37 @@ kubectl expose deploy web-service --type=NodePort --port=80
 
 Create ingress
 ```
-kubectl create ingress web-service-ingress --rule="/=web-service:80" --rule="/hello=newdep:8080"
-```
-
-Add hosts file
-```
-ansible@CTRL-01:~$ cat /etc/hosts | grep web-service
-127.0.0.1 nginxsvc.info web-service.info
+kubectl create ingress web-service --class=nginx --rule="/=web-service:80" --rule="/hello=newdep:8080"
 ```
 
 Validate the ingress and we can see wildcard in the hosts
 ```
 ansible@CTRL-01:~$ kubectl get ingress
-NAME                  CLASS    HOSTS           ADDRESS   PORTS   AGE
-nginxsvc              nginx    nginxsvc.info             80      5h7m
-web-service-ingress   <none>   *                         80      2m8s
+NAME          CLASS   HOSTS           ADDRESS   PORTS   AGE
+nginxsvc      nginx   nginxsvc.info             80      7h36m
+web-service   nginx   *                         80      8m48s
 ```
 
 See the details, the error on `/hello` path
 ```
-ansible@CTRL-01:~$ kubectl describe ingress web-service-ingress
-Name:             web-service-ingress
+ansible@CTRL-01:~$ kubectl describe ingress web-service
+Name:             web-service
 Labels:           <none>
 Namespace:        default
 Address:
-Ingress Class:    <none>
+Ingress Class:    nginx
 Default backend:  <default>
 Rules:
   Host        Path  Backends
   ----        ----  --------
   *
-              /        web-service:80 (172.16.19.67:80,172.16.89.194:80,172.16.108.2:80)
-              /hello   newdep:8080 (<error: services "newdep" not found>)
+              /        web-service:80 (172.16.89.195:80,172.16.19.68:80,172.16.108.4:80)
+              /hello   newdep:8080 ()
 Annotations:  <none>
-Events:       <none>
+Events:
+  Type    Reason  Age   From                      Message
+  ----    ------  ----  ----                      -------
+  Normal  Sync    40s   nginx-ingress-controller  Scheduled for sync
 ```
 
 We deploy for `newdep`
@@ -277,22 +274,70 @@ kubectl expose deploy newdep --port=8080
 
 Validate the ingress again
 ```
-ansible@CTRL-01:~$ kubectl describe ingress web-service-ingress
-Name:             web-service-ingress
+ansible@CTRL-01:~$ kubectl describe ingress web-service
+Name:             web-service
 Labels:           <none>
 Namespace:        default
 Address:
-Ingress Class:    <none>
+Ingress Class:    nginx
 Default backend:  <default>
 Rules:
   Host        Path  Backends
   ----        ----  --------
   *
-              /        web-service:80 (172.16.19.67:80,172.16.89.194:80,172.16.108.2:80)
-              /hello   newdep:8080 ()
+              /        web-service:80 (172.16.89.195:80,172.16.19.68:80,172.16.108.4:80)
+              /hello   newdep:8080 (172.16.108.5:8080)
 Annotations:  <none>
-Events:       <none>
+Events:
+  Type    Reason  Age    From                      Message
+  ----    ------  ----   ----                      -------
+  Normal  Sync    4m37s  nginx-ingress-controller  Scheduled for sync
 ```
+
+We can access these Pod by using the ingress-controller IP. Below is the ingress controller IP by checking the ingress controller service. This is below we are not exporing the nodeport for the ingress-controller service during installation with helm
+```
+ansible@CTRL-01:~$ kubectl get service -n ingress-nginx
+NAME                                 TYPE           CLUSTER-IP      EXTERNAL-IP   PORT(S)                      AGE
+ingress-nginx-controller             LoadBalancer   10.98.168.34    <pending>     80:30283/TCP,443:30668/TCP   7h39m
+ingress-nginx-controller-admission   ClusterIP      10.104.168.73   <none>        443/TCP                      7h39m
+```
+
+Test default the ingress using `10.98.168.34`
+```
+ansible@CTRL-01:~$ curl -H "Host: web-service.info" http://10.98.168.34
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+```
+
+Test path
+```
+ansible@CTRL-01:~$ curl -H "Host: web-service.info" http://10.98.168.34/hello
+Hello, world!
+Version: 2.0.0
+Hostname: newdep-76896cd768-s4st6
+```
+
 ## Port Forwarding
 
 Use to connect apps for analyzing and troubleshooting. Foward traffic coming in to a local port on the kubectl client machine to a port that is available in a Pod. Example `kubectl port-forward mypod 5555:80` - forward local port 5555 to Pod `mypod` port 80 Then, `ctrl+z` or a `&` at the end of the command to run in the background. 
