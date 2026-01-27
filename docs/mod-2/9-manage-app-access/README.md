@@ -341,3 +341,28 @@ Hostname: newdep-76896cd768-s4st6
 ## Port Forwarding
 
 Use to connect apps for analyzing and troubleshooting. Foward traffic coming in to a local port on the kubectl client machine to a port that is available in a Pod. Example `kubectl port-forward mypod 5555:80` - forward local port 5555 to Pod `mypod` port 80 Then, `ctrl+z` or a `&` at the end of the command to run in the background. 
+
+## Gateway API
+
+### Understanding Gateway API
+
+Replacement for Ingress, added more features. Use several resources:
+- GatewayClass - represents the Gateway controller
+- Gateway: defaines an instance of traffice handling infra
+- HTTPRoute: how traffic is routed
+
+We need to setup Gateway API controller in order to get it to working. Gateway API controllers are provided by the ecosystem. Example Nginx Gateway Fabric. Before installing the controller, you must install the custom resource
+
+#### Resource - GatewayClass
+
+Represent physical Gateway Controller. It uses`spec.controllerName` to connect to a specific Gateway Controller.
+
+#### Resource - Gateway
+
+Multiple Gateways can connect to one Gateway Controller, at least one Gateway is required. The Gateway uses the `gatewayClassName` property to connect to the `GatewayController`. It also defines `listeners` to specify which protocols should be serviced.
+
+#### Resource - HTTPRoutes
+
+Defines to which Service an incoming request should be forwarded. Incoming requests are identified by the `spec.hostnames`. The `parentRefs` property connects the HTTPRoute to a Gateway. The `backendRefs` property connects the HTTPRoute to a Service.
+
+### Using API to Access Application
