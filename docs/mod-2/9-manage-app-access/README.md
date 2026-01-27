@@ -365,4 +365,117 @@ Multiple Gateways can connect to one Gateway Controller, at least one Gateway is
 
 Defines to which Service an incoming request should be forwarded. Incoming requests are identified by the `spec.hostnames`. The `parentRefs` property connects the HTTPRoute to a Gateway. The `backendRefs` property connects the HTTPRoute to a Service.
 
-### Using API to Access Application
+## Using Gateway API to Access Application
+
+High-level steps to provision:
+1. Make sure custom resources available
+2. Install a community Gateway API - not in vanilla K8s
+3. Verify the community Gateway Controller is ready
+4. Create K8s application
+5. Configure GatewayClass, Gateway and HTTPRoute
+6. Test by accessing the Service that exposes the community controller
+
+### Setup Gateway API
+
+Install custom resources, this will installed the custom resource required
+```
+kubectl kustomize "https://github.com/nginx/nginx-gateway-fabric/config/crd/gateway-api/standard?ref=v2.3.0" | kubectl apply -f -
+```
+
+Install community gateway controller - nginx-gateway-fabric
+```
+helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric --create-namespace -n nginx-gateway
+```
+
+Validate deployment
+```
+ansible@CTRL-01:~$ kubectl get all -n nginx-gateway
+NAME                                           READY   STATUS    RESTARTS   AGE
+pod/ngf-nginx-gateway-fabric-5bff9d865-4cwjs   1/1     Running   0          62s
+
+NAME                               TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
+service/ngf-nginx-gateway-fabric   ClusterIP   10.99.29.171   <none>        443/TCP   62s
+
+NAME                                       READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/ngf-nginx-gateway-fabric   1/1     1            1           62s
+
+NAME                                                 DESIRED   CURRENT   READY   AGE
+replicaset.apps/ngf-nginx-gateway-fabric-5bff9d865   1         1         1       62s
+```
+
+Validate the gateway controller - gc
+```
+ansible@CTRL-01:~$ kubectl get gc
+NAME    CONTROLLER                                   ACCEPTED   AGE
+nginx   gateway.nginx.org/nginx-gateway-controller   True       111s
+```
+
+Ensure that the gwc Service accessible as a NodePort by default it is a loadbalancer. With NodePort we can use external loadbalancer to forward to controller nodeport 32443 by editing the spec type
+```
+kubectl edit -n nginx-gateway svc ngf-nginx-gateway-fabric
+```
+
+Update the spec port as below:
+```
+  ports:
+  - name: agent-grpc
+    port: 8443
+    protocol: TCP
+    targetPort: 8443
+  - name: http
+    nodePort: 32080
+    port: 80
+    protocol: TCP
+    targetPort: 80
+  - name: https
+    nodePort: 32443
+    port: 443
+    protocol: TCP
+    targetPort: 443
+```
+
+Create K8s resource - deployment and service
+```
+kubectl create deploy webservice --image=nginx --replicas=3
+kubectl expose deploy webservice --port=80
+```
+
+Download the httprouting
+```
+wget https://github.com/sandervanvugt/cka/raw/refs/heads/master/http-routing.yaml
+```
+
+Check the gatewayClassName, listener, parentRefs, hostnames, and rules
+```
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: example-gateway
+spec:
+  gatewayClassName: nginx
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: example-route
+spec:
+  parentRefs:
+  - name: example-gateway
+  hostnames:
+  - "whatever.com"
+  rules:
+  - backendRefs:
+    - name: webservice
+      port: 80
+```
+
+Apply the config
+```
+kubectl apply -f http-routing.yaml
+```
+
+
