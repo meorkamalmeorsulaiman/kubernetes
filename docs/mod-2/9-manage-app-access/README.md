@@ -392,9 +392,25 @@ Install community gateway controller - nginx-gateway-fabric with nodePort type
 helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric --version 1.5.1  --create-namespace -n nginx-gateway --set nginx.service.type=NodePort
 ```
 
+Or install without NodePort options and later edit
+```
+helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric --version 1.5.1  --create-namespace -n nginx-gateway
+```
+
 Validate helm installed
 ```
 helm list --all-namespaces
+```
+
+Edit service type
+```
+kubectl edit -n nginx-gateway svc ngf-nginx-gateway-fabric
+
+<<Snippet>>
+    type: NodePort
+  status:
+    loadBalancer: {}
+<<Snippet>>
 ```
 
 Validate deployment
@@ -423,64 +439,8 @@ nginx   gateway.nginx.org/nginx-gateway-controller   True       2m7s
 Validate gateway service set to nodePort
 ```
 ansible@CTRL01:~$ kubectl get svc -n nginx-gateway
-NAME                      TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
-my-nginx-gateway-fabric   NodePort   10.105.249.205   <none>        80:31761/TCP,443:31930/TCP   3m43s
-```
-
-Edit the gateway-api service so that it matches the config
-```
-kubectl edit -n nginx-gateway svc ngf-nginx-gateway-fabric
-
-ansible@CTRL01:~$ kubectl get svc -n nginx-gateway -o yaml
-apiVersion: v1
-items:
-- apiVersion: v1
-  kind: Service
-  metadata:
-    annotations:
-      meta.helm.sh/release-name: my-nginx-gateway-fabric
-      meta.helm.sh/release-namespace: nginx-gateway
-    creationTimestamp: "2026-01-29T03:21:13Z"
-    labels:
-      app.kubernetes.io/instance: my-nginx-gateway-fabric
-      app.kubernetes.io/managed-by: Helm
-      app.kubernetes.io/name: nginx-gateway-fabric
-      app.kubernetes.io/version: 1.5.1
-      helm.sh/chart: nginx-gateway-fabric-1.5.1
-    name: my-nginx-gateway-fabric
-    namespace: nginx-gateway
-    resourceVersion: "2716"
-    uid: 08b7f219-e573-45f1-8dd2-6101858c9b3c
-  spec:
-    clusterIP: 10.105.249.205
-    clusterIPs:
-    - 10.105.249.205
-    externalTrafficPolicy: Local
-    internalTrafficPolicy: Cluster
-    ipFamilies:
-    - IPv4
-    ipFamilyPolicy: SingleStack
-    ports:
-    - name: http
-      nodePort: 31761
-      port: 80
-      protocol: TCP
-      targetPort: 80
-    - name: https
-      nodePort: 31930
-      port: 443
-      protocol: TCP
-      targetPort: 443
-    selector:
-      app.kubernetes.io/instance: my-nginx-gateway-fabric
-      app.kubernetes.io/name: nginx-gateway-fabric
-    sessionAffinity: None
-    type: NodePort
-  status:
-    loadBalancer: {}
-kind: List
-metadata:
-  resourceVersion: ""
+NAME                       TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)                      AGE
+ngf-nginx-gateway-fabric   NodePort   10.96.114.70   <none>        80:30612/TCP,443:31956/TCP   114s
 ```
 
 Create K8s resource - deployment and service
@@ -489,17 +449,12 @@ kubectl create deploy webservice --image=nginx --replicas=3
 kubectl expose deploy webservice --port=80
 ```
 
-Download the httprouting
-```
-wget https://github.com/sandervanvugt/cka/raw/refs/heads/master/http-routing.yaml
-```
-
-Check the gatewayClassName, listener, parentRefs, hostnames, and rules
+Create the gatewayClassName, listener, parentRefs, hostnames, and rules
 ```
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
 metadata:
-  name: example-gateway
+  name: webservice-gateway
 spec:
   gatewayClassName: nginx
   listeners:
@@ -510,34 +465,28 @@ spec:
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
-  name: example-route
+  name: webservice-route
 spec:
   parentRefs:
-  - name: example-gateway
+  - name: webservice-gateway
   hostnames:
-  - "whatever.com"
+  - "webservice.com"
   rules:
   - backendRefs:
     - name: webservice
       port: 80
 ```
 
-Apply the config
-```
-kubectl apply -f http-routing.yaml
-```
-
-Check HTTPRoute
-
+Apply the config and check HTTPRoute
 ```  
 ansible@CTRL01:~$ kubectl get httproute
-NAME            HOSTNAMES          AGE
-example-route   ["whatever.com"]   15s
+NAME               HOSTNAMES            AGE
+webservice-route   ["webservice.com"]   22s
 ```
 
 Test using gateway api cluster IP - positive
 ```
-ansible@CTRL01:~$ curl -H "Host: whatever.com" http://10.105.249.205
+ansible@CTRL01:~$ curl -H "Host: webservice.com" http://10.96.114.70
 <!DOCTYPE html>
 <html>
 <head>
@@ -565,7 +514,7 @@ Commercial support is available at
 
 Test using gateway api cluster IP - false positive
 ```
-ansible@CTRL01:~$ curl -H "Host: whatever.org" http://10.105.249.205
+ansible@CTRL01:~$ curl -H "Host: webservice.org" http://10.96.114.70
 <html>
 <head><title>404 Not Found</title></head>
 <body>
