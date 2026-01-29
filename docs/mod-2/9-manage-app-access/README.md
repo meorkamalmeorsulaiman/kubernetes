@@ -524,4 +524,112 @@ ansible@CTRL01:~$ curl -H "Host: webservice.org" http://10.103.189.237
 </html>
 ```
 
+## Gateway API TLS
 
+TLS can terminate on Gateway or endpoint. Terminal TLS on gateway:
+- Craete a self-signed
+- Create K8s secret for the self-sign
+- Update the gateway to use K8s secret
+- Add an HTTPRoute resource for hte HTTPS traffic
+- Configure port forwarding to the Gateway Fabric NodePort service - optional. You can access using the Gabteway fabric Cluster IP
+
+>**Note:** This section is not part of the exam.
+
+### Working with TLS Termination on Gateway API 
+
+Create self-signed certificate
+```
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj "/CN=webservice.com"
+```
+
+Create K8s secret for the created cert
+```
+kubectl create secret tls gateway-tls --cert=tls.crt --key=tls.key
+```
+
+Update the gateway and http route. Then `kubectl replace -f http-routing.yaml` We still using backendRefs port 80 because previous service running on port 80. Prior apply this config please delete the previous webservice gateway and httproute
+```
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: webservice-gateway
+spec:
+  gatewayClassName: nginx
+  listeners:
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    hostname: webservice.com
+    name: http
+    protocol: HTTP
+    port: 80
+  - allowedRoutes:
+      namespaces:
+        from: Same
+    hostname: webservice.com
+    name: https
+    protocol: HTTPS
+    port: 443
+    tls:
+      certificateRefs:
+      - group: ""
+        kind: Secret
+        name: gateway-tls
+      mode: Terminate 
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: webservice-route
+spec:
+  parentRefs:
+  - name: webservice-gateway
+  hostnames:
+  - "webservice.com"
+  rules:
+  - backendRefs:
+    - name: webservice
+      port: 80
+  - filters:
+    - type: RequestRedirect
+      requestRedirect:
+        scheme: https
+        port: 443
+```
+
+Let's test, hosts file already added with same cluster IP `10.103.189.237 webservice.com`
+```
+ansible@CTRL01:~$ curl -k https://webservice.com -H "Host: webservice.com" -I
+HTTP/2 200 
+server: nginx
+date: Thu, 29 Jan 2026 12:59:56 GMT
+content-type: text/html
+content-length: 615
+last-modified: Tue, 09 Dec 2025 18:28:10 GMT
+etag: "69386a3a-267"
+accept-ranges: bytes
+```
+
+Let's see if it failed correctly
+```
+ansible@CTRL01:~$ curl -k https://webservice.com -H "Host: webservice.org" -I
+HTTP/2 404 
+server: nginx
+date: Thu, 29 Jan 2026 13:00:01 GMT
+content-type: text/html
+content-length: 146
+```
+
+Let's see port 80
+```
+ansible@CTRL01:~$ curl http://webservice.com -I
+HTTP/1.1 200 OK
+Server: nginx
+Date: Thu, 29 Jan 2026 12:59:00 GMT
+Content-Type: text/html
+Content-Length: 615
+Connection: keep-alive
+Last-Modified: Tue, 09 Dec 2025 18:28:10 GMT
+ETag: "69386a3a-267"
+Accept-Ranges: bytes
+```
