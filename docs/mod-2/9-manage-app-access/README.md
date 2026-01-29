@@ -387,7 +387,7 @@ Validate CRDs installed
 kubectl get crds | grep gateway.network
 ```
 
-Install community gateway controller - nginx-gateway-fabric with nodePort type
+Install community gateway controller - nginx-gateway-fabric with nodePort type [Helm Artifact](https://artifacthub.io/packages/helm/nginx-gateway-fabric/nginx-gateway-fabric/1.5.1)
 ```
 helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric --version 1.5.1  --create-namespace -n nginx-gateway --set nginx.service.type=NodePort
 ```
