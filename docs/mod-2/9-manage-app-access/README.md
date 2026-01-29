@@ -377,61 +377,110 @@ High-level steps to provision:
 
 ### Setup Gateway API
 
-Install custom resources, this will installed the custom resource required
+Install custom resources, this will installed the custom resource required - release version should refer to K8s sigs [Gateway API](https://github.com/kubernetes-sigs/gateway-api)
 ```
-kubectl kustomize "https://github.com/nginx/nginx-gateway-fabric/config/crd/gateway-api/standard?ref=v2.3.0" | kubectl apply -f -
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
 ```
 
-Install community gateway controller - nginx-gateway-fabric
+Validate CRDs installed 
 ```
-helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric --create-namespace -n nginx-gateway
+kubectl get crds | grep gateway.network
+```
+
+Install community gateway controller - nginx-gateway-fabric with nodePort type
+```
+helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric --version 1.5.1  --create-namespace -n nginx-gateway --set nginx.service.type=NodePort
+```
+
+Validate helm installed
+```
+helm list --all-namespaces
 ```
 
 Validate deployment
 ```
-ansible@CTRL-01:~$ kubectl get all -n nginx-gateway
+ansible@CTRL01:~$ kubectl get all -n nginx-gateway
 NAME                                           READY   STATUS    RESTARTS   AGE
-pod/ngf-nginx-gateway-fabric-5bff9d865-4cwjs   1/1     Running   0          62s
+pod/ngf-nginx-gateway-fabric-5bff9d865-mgpsv   1/1     Running   0          104s
 
-NAME                               TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE
-service/ngf-nginx-gateway-fabric   ClusterIP   10.99.29.171   <none>        443/TCP   62s
+NAME                               TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
+service/ngf-nginx-gateway-fabric   ClusterIP   10.106.179.170   <none>        443/TCP   104s
 
 NAME                                       READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/ngf-nginx-gateway-fabric   1/1     1            1           62s
+deployment.apps/ngf-nginx-gateway-fabric   1/1     1            1           104s
 
 NAME                                                 DESIRED   CURRENT   READY   AGE
-replicaset.apps/ngf-nginx-gateway-fabric-5bff9d865   1         1         1       62s
+replicaset.apps/ngf-nginx-gateway-fabric-5bff9d865   1         1         1       104s
 ```
 
 Validate the gateway controller - gc
 ```
-ansible@CTRL-01:~$ kubectl get gc
+ansible@CTRL01:~$  kubectl get gc
 NAME    CONTROLLER                                   ACCEPTED   AGE
-nginx   gateway.nginx.org/nginx-gateway-controller   True       111s
+nginx   gateway.nginx.org/nginx-gateway-controller   True       2m7s
 ```
 
-Ensure that the gwc Service accessible as a NodePort by default it is a loadbalancer. With NodePort we can use external loadbalancer to forward to controller nodeport 32443 by editing the spec type
+Validate gateway service set to nodePort
+```
+ansible@CTRL01:~$ kubectl get svc -n nginx-gateway
+NAME                      TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+my-nginx-gateway-fabric   NodePort   10.105.249.205   <none>        80:31761/TCP,443:31930/TCP   3m43s
+```
+
+Edit the gateway-api service so that it matches the config
 ```
 kubectl edit -n nginx-gateway svc ngf-nginx-gateway-fabric
-```
 
-Update the spec port as below:
-```
-  ports:
-  - name: agent-grpc
-    port: 8443
-    protocol: TCP
-    targetPort: 8443
-  - name: http
-    nodePort: 32080
-    port: 80
-    protocol: TCP
-    targetPort: 80
-  - name: https
-    nodePort: 32443
-    port: 443
-    protocol: TCP
-    targetPort: 443
+ansible@CTRL01:~$ kubectl get svc -n nginx-gateway -o yaml
+apiVersion: v1
+items:
+- apiVersion: v1
+  kind: Service
+  metadata:
+    annotations:
+      meta.helm.sh/release-name: my-nginx-gateway-fabric
+      meta.helm.sh/release-namespace: nginx-gateway
+    creationTimestamp: "2026-01-29T03:21:13Z"
+    labels:
+      app.kubernetes.io/instance: my-nginx-gateway-fabric
+      app.kubernetes.io/managed-by: Helm
+      app.kubernetes.io/name: nginx-gateway-fabric
+      app.kubernetes.io/version: 1.5.1
+      helm.sh/chart: nginx-gateway-fabric-1.5.1
+    name: my-nginx-gateway-fabric
+    namespace: nginx-gateway
+    resourceVersion: "2716"
+    uid: 08b7f219-e573-45f1-8dd2-6101858c9b3c
+  spec:
+    clusterIP: 10.105.249.205
+    clusterIPs:
+    - 10.105.249.205
+    externalTrafficPolicy: Local
+    internalTrafficPolicy: Cluster
+    ipFamilies:
+    - IPv4
+    ipFamilyPolicy: SingleStack
+    ports:
+    - name: http
+      nodePort: 31761
+      port: 80
+      protocol: TCP
+      targetPort: 80
+    - name: https
+      nodePort: 31930
+      port: 443
+      protocol: TCP
+      targetPort: 443
+    selector:
+      app.kubernetes.io/instance: my-nginx-gateway-fabric
+      app.kubernetes.io/name: nginx-gateway-fabric
+    sessionAffinity: None
+    type: NodePort
+  status:
+    loadBalancer: {}
+kind: List
+metadata:
+  resourceVersion: ""
 ```
 
 Create K8s resource - deployment and service
@@ -478,4 +527,50 @@ Apply the config
 kubectl apply -f http-routing.yaml
 ```
 
+Check HTTPRoute
 
+```  
+ansible@CTRL01:~$ kubectl get httproute
+NAME            HOSTNAMES          AGE
+example-route   ["whatever.com"]   15s
+```
+
+Test using gateway api cluster IP - positive
+```
+ansible@CTRL01:~$ curl -H "Host: whatever.com" http://10.105.249.205
+<!DOCTYPE html>
+<html>
+<head>
+<title>Welcome to nginx!</title>
+<style>
+html { color-scheme: light dark; }
+body { width: 35em; margin: 0 auto;
+font-family: Tahoma, Verdana, Arial, sans-serif; }
+</style>
+</head>
+<body>
+<h1>Welcome to nginx!</h1>
+<p>If you see this page, the nginx web server is successfully installed and
+working. Further configuration is required.</p>
+
+<p>For online documentation and support please refer to
+<a href="http://nginx.org/">nginx.org</a>.<br/>
+Commercial support is available at
+<a href="http://nginx.com/">nginx.com</a>.</p>
+
+<p><em>Thank you for using nginx.</em></p>
+</body>
+</html>
+```
+
+Test using gateway api cluster IP - false positive
+```
+ansible@CTRL01:~$ curl -H "Host: whatever.org" http://10.105.249.205
+<html>
+<head><title>404 Not Found</title></head>
+<body>
+<center><h1>404 Not Found</h1></center>
+<hr><center>nginx</center>
+</body>
+</html>
+```
