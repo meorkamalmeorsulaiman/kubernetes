@@ -377,9 +377,9 @@ High-level steps to provision:
 
 ### Setup Gateway API
 
-Install custom resources, this will installed the custom resource required - release version should refer to K8s sigs [Gateway API](https://github.com/kubernetes-sigs/gateway-api)
+Install custom resources, this will installed the custom resource version `1.5.1`
 ```
-kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.1/standard-install.yaml
+kubectl kustomize "https://github.com/nginx/nginx-gateway-fabric/config/crd/gateway-api/standard?ref=v1.5.1" | kubectl apply -f -
 ```
 
 Validate CRDs installed 
@@ -389,7 +389,7 @@ kubectl get crds | grep gateway.network
 
 Install community gateway controller - nginx-gateway-fabric with nodePort type [Helm Artifact](https://artifacthub.io/packages/helm/nginx-gateway-fabric/nginx-gateway-fabric/1.5.1)
 ```
-helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric --version 1.5.1  --create-namespace -n nginx-gateway --set nginx.service.type=NodePort
+helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric
 ```
 
 Or install without NodePort options and later edit
@@ -413,34 +413,34 @@ kubectl edit -n nginx-gateway svc ngf-nginx-gateway-fabric
 <<Snippet>>
 ```
 
+Validate nginx-gateway service set to `NodePort1`
+```
+ansible@CTRL01:~$ kubectl get svc -n nginx-gateway
+NAME                       TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+ngf-nginx-gateway-fabric   NodePort   10.103.189.237   <none>        80:31418/TCP,443:30493/TCP   47s
+```
+
 Validate deployment
 ```
 ansible@CTRL01:~$ kubectl get all -n nginx-gateway
-NAME                                           READY   STATUS    RESTARTS   AGE
-pod/ngf-nginx-gateway-fabric-5bff9d865-mgpsv   1/1     Running   0          104s
+NAME                                            READY   STATUS    RESTARTS   AGE
+pod/ngf-nginx-gateway-fabric-85df46c4fb-pfbml   2/2     Running   0          89s
 
-NAME                               TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
-service/ngf-nginx-gateway-fabric   ClusterIP   10.106.179.170   <none>        443/TCP   104s
+NAME                               TYPE       CLUSTER-IP       EXTERNAL-IP   PORT(S)                      AGE
+service/ngf-nginx-gateway-fabric   NodePort   10.103.189.237   <none>        80:31418/TCP,443:30493/TCP   90s
 
 NAME                                       READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/ngf-nginx-gateway-fabric   1/1     1            1           104s
+deployment.apps/ngf-nginx-gateway-fabric   1/1     1            1           89s
 
-NAME                                                 DESIRED   CURRENT   READY   AGE
-replicaset.apps/ngf-nginx-gateway-fabric-5bff9d865   1         1         1       104s
+NAME                                                  DESIRED   CURRENT   READY   AGE
+replicaset.apps/ngf-nginx-gateway-fabric-85df46c4fb   1         1         1       89s
 ```
 
 Validate the gateway controller - gc
 ```
 ansible@CTRL01:~$  kubectl get gc
 NAME    CONTROLLER                                   ACCEPTED   AGE
-nginx   gateway.nginx.org/nginx-gateway-controller   True       2m7s
-```
-
-Validate gateway service set to nodePort
-```
-ansible@CTRL01:~$ kubectl get svc -n nginx-gateway
-NAME                       TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)                      AGE
-ngf-nginx-gateway-fabric   NodePort   10.96.114.70   <none>        80:30612/TCP,443:31956/TCP   114s
+nginx   gateway.nginx.org/nginx-gateway-controller   True       108s
 ```
 
 Create K8s resource - deployment and service
@@ -486,7 +486,7 @@ webservice-route   ["webservice.com"]   22s
 
 Test using gateway api cluster IP - positive
 ```
-ansible@CTRL01:~$ curl -H "Host: webservice.com" http://10.96.114.70
+ansible@CTRL01:~$ curl -H "Host: webservice.com" http://10.103.189.237
 <!DOCTYPE html>
 <html>
 <head>
@@ -514,7 +514,7 @@ Commercial support is available at
 
 Test using gateway api cluster IP - false positive
 ```
-ansible@CTRL01:~$ curl -H "Host: webservice.org" http://10.96.114.70
+ansible@CTRL01:~$ curl -H "Host: webservice.org" http://10.103.189.237
 <html>
 <head><title>404 Not Found</title></head>
 <body>
@@ -523,3 +523,5 @@ ansible@CTRL01:~$ curl -H "Host: webservice.org" http://10.96.114.70
 </body>
 </html>
 ```
+
+
