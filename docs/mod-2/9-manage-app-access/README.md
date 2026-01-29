@@ -377,7 +377,7 @@ High-level steps to provision:
 
 ### Setup Gateway API
 
-Install custom resources, this will installed the custom resource version `1.5.1`
+Install custom resources, this will installed the custom resource version `1.5.1` step for [Installing CRDs](https://docs.nginx.com/nginx-gateway-fabric/install/helm/)
 ```
 kubectl kustomize "https://github.com/nginx/nginx-gateway-fabric/config/crd/gateway-api/standard?ref=v1.5.1" | kubectl apply -f -
 ```
@@ -387,14 +387,9 @@ Validate CRDs installed
 kubectl get crds | grep gateway.network
 ```
 
-Install community gateway controller - nginx-gateway-fabric with nodePort type [Helm Artifact](https://artifacthub.io/packages/helm/nginx-gateway-fabric/nginx-gateway-fabric/1.5.1)
+Install community gateway controller [Helm Artifact](https://artifacthub.io/packages/helm/nginx-gateway-fabric/nginx-gateway-fabric/1.5.1) Version will auto match with CRFs installed
 ```
 helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric
-```
-
-Or install without NodePort options and later edit
-```
-helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric --version 1.5.1  --create-namespace -n nginx-gateway
 ```
 
 Validate helm installed
@@ -449,7 +444,7 @@ kubectl create deploy webservice --image=nginx --replicas=3
 kubectl expose deploy webservice --port=80
 ```
 
-Create the gatewayClassName, listener, parentRefs, hostnames, and rules
+Create the gatewayClassName, listener, parentRefs, hostnames, and rules `http-routing.yaml`
 ```
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
@@ -547,7 +542,7 @@ Create K8s secret for the created cert
 kubectl create secret tls gateway-tls --cert=tls.crt --key=tls.key
 ```
 
-Update the gateway and http route. Then `kubectl replace -f http-routing.yaml` We still using backendRefs port 80 because previous service running on port 80. Prior apply this config please delete the previous webservice gateway and httproute
+Update the gateway and http route. We still using port 80 for `backendRefs` because we are using the same service from previous deployment `webservice` Prior apply this config please delete the previous webservice gateway and httproute `kubectl delete -f http-routing.yaml`
 ```
 apiVersion: gateway.networking.k8s.io/v1
 kind: Gateway
