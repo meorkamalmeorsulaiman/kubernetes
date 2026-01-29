@@ -633,3 +633,7 @@ Last-Modified: Tue, 09 Dec 2025 18:28:10 GMT
 ETag: "69386a3a-267"
 Accept-Ranges: bytes
 ```
+
+## Lab
+
+Run a deployment name `lab9` with 3 replicas with nginx image expose that it will accessible from `lab9.practice` Use port forwarding to test
