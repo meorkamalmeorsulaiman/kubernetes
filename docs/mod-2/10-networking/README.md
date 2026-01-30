@@ -72,5 +72,14 @@ Try to lookup previously created pod in the default namespace using the FQDN for
 kubectl exec -it prod-jumppod -n prod-vrf -- nslookup webserver.default.svc.cluster.local
 ```
 
+## Network Policies
 
+No restrictions between traffic in K8s even in other namespaces. NetworkPolicies can be use to limit communication. CNI Plugin must first support this feature. In NetworkPlicies, traffic will be denined if there is no match. Identifiers used to apply the network policy. There are 3 identifiers:
+- Pods - podSelector
+- Namespaces - namespaceSelector
+- IP blocks - ipBlock
+
+A selector label is used to specify what traffic is allowed to and from the Pods that match the selector
+
+### Manage Traffic between Namespace
 
