@@ -49,4 +49,26 @@ index.html           100% |*****************************************************
 
 If a Service is running in the same Namespace, it can be reached from a Pod by using its short hostname. If a Service is running in another Namespace, an FQDN consisting of `servicename.namespace.svc.clustername` must be used. The clustername is defined in the coredns ConfigMap Corefile definition and set to `cluster.local` if it hasn't been changed, use `kubectl get cm -n kube-system coredns -o yaml` to verify. Below is working out Service that run on different namespace.
 
+Create another pod in different namespace
+```
+kubectl create ns prod-vrf
+kubectl run prod-jumppod --image=busybox -n prod-vrf -- sleep 3600
+```
+
+Check the DNS settings for the new pod in `prod-vrf`
+```
+kubectl exec -it prod-jumppod -n prod-vrf -- cat /etc/resolv.conf
+```
+
+Try to lookup previously create pod in the default namespace. It should fail
+```
+kubectl exec -it prod-jumppod -n prod-vrf -- nslookup webserver
+```
+
+Try to lookup previously created pod in the default namespace using the FQDN format
+```
+kubectl exec -it prod-jumppod -n prod-vrf -- nslookup webserver.default.svc.cluster.local
+```
+
+
 
