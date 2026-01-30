@@ -45,6 +45,8 @@ index.html           100% |*****************************************************
 'index.html' saved
 ```
 
+> **Notes:** To attach to the shell use `kubectl exec --stdin --tty jumppod -- /bin/sh`
+
 ### Using Service by Name in different namespace
 
 If a Service is running in the same Namespace, it can be reached from a Pod by using its short hostname. If a Service is running in another Namespace, an FQDN consisting of `servicename.namespace.svc.clustername` must be used. The clustername is defined in the coredns ConfigMap Corefile definition and set to `cluster.local` if it hasn't been changed, use `kubectl get cm -n kube-system coredns -o yaml` to verify. Below is working out Service that run on different namespace.
