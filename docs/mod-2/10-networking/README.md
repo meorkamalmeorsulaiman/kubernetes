@@ -269,3 +269,5 @@ Accept-Ranges: bytes
 
 Much more granular rules can go to [Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
 
+## Lab
+Run a web service in restriced namesapce and expose it. A jump host reside in default namespace where `jump01` allow SSH to `jump02` While `jump02` is the only pod that can access the web service in the restricted namespace.
