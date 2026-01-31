@@ -81,5 +81,70 @@ No restrictions between traffic in K8s even in other namespaces. NetworkPolicies
 
 A selector label is used to specify what traffic is allowed to and from the Pods that match the selector
 
-### Manage Traffic between Namespace
+### Manage Traffic between Pods
+
+Let's create 2 pod
+```
+kubectl run webserver --image=nginx
+kubectl expose pod webserver --port=80
+kubectl run jump01 --image=ubuntu -- sleep 3600
+```
+
+Let's test connection from the jump host to the webserver
+```
+ansible@CTRL01:~$ kubectl exec -it jump01 -- curl http://webserver -I
+HTTP/1.1 200 OK
+Server: nginx/1.29.4
+Date: Sat, 31 Jan 2026 02:13:46 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 09 Dec 2025 18:28:10 GMT
+Connection: keep-alive
+ETag: "69386a3a-267"
+Accept-Ranges: bytes
+```
+
+Let's setup the networkPolicy
+```
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: http-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      run: webserver
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          http: "true"
+```
+
+Above describe:
+- The policy apply on all pod in default namespace that has label `run=webserver`
+- The ingress apply to any pod in default namespace with label `http=true` will be allowed to connect
+
+Let's apply the policy test connection from `jump01` It should fail
+```
+root@jump01:/# curl http://webserver -I --connect-timeout 1
+curl: (28) Failed to connect to webserver port 80 after 1002 ms: Timeout was reached
+```
+
+Let's attach label to `jump0` and test again
+```
+ansible@CTRL01:~$ kubectl label pod jump01 http=true
+pod/jump01 labeled
+ansible@CTRL01:~$ kubectl exec -it jump01 -- curl http://webserver -I --connect-timeout 1
+HTTP/1.1 200 OK
+Server: nginx/1.29.4
+Date: Sat, 31 Jan 2026 02:31:07 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 09 Dec 2025 18:28:10 GMT
+Connection: keep-alive
+ETag: "69386a3a-267"
+Accept-Ranges: bytes
+```
 
