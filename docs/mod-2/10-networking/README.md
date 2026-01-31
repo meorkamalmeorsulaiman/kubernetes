@@ -148,3 +148,124 @@ ETag: "69386a3a-267"
 Accept-Ranges: bytes
 ```
 
+networkPolicy will apply the rule within the namespace where it was created. If no matching label in the ingress/egress podSelector, the ingress and egress will be apply to all pod within the name space. Below is the example:
+
+```
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: http-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      run = webserver
+  ingress:
+  - from:
+    - podSelector: {}
+```
+
+### Manage traffic between namespaces
+
+To allow traffic from different namespace, we need to unspecified the ingress namespaceSelector. Let's start by creating new jump host in a new namespace
+```
+kubectl create ns vrf-green
+kubectl run jump03 -n vrf-green --image=ubuntu -- sleep 3600
+```
+
+Let's test the connection to the webserver
+```
+root@jump03:/# curl -I http://webserver.default.svc.cluster.local --connect-timeout 1
+curl: (28) Failed to connect to webserver.default.svc.cluster.local port 80 after 1002 ms: Timeout was reached
+```
+
+Let's update the networkpolicy so that it access from any namespace
+```
+ansible@CTRL01:~$ cat netPolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: http-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      run: webserver
+  ingress:
+  - from:
+    - namespaceSelector: {}
+    - podSelector:
+        matchLabels:
+          http: "true"
+```
+
+Let's test again
+```
+ansible@CTRL01:~$ kubectl exec -n vrf-green --stdin --tty jump03 -- /bin/bash
+root@jump03:/# curl -I http://webserver.default.svc.cluster.local --connect-timeout 1
+HTTP/1.1 200 OK
+Server: nginx/1.29.4
+Date: Sat, 31 Jan 2026 03:01:41 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 09 Dec 2025 18:28:10 GMT
+Connection: keep-alive
+ETag: "69386a3a-267"
+Accept-Ranges: bytes
+```
+
+`jump03` doesn't have label but get's permitted. This is because the ingress rule is in `OR` condition. In order to get and `AND` condition. The hyphen must be remove from ingress `podSelector` Let update the policy as below:
+```
+ansible@CTRL01:~$ cat netPolicy.yaml
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: http-network-policy
+  namespace: default
+spec:
+  podSelector:
+    matchLabels:
+      run: webserver
+  ingress:
+  - from:
+    - namespaceSelector: {}
+      podSelector:
+        matchLabels:
+          http: "true"
+```
+
+Let's test and we should expect the `jump03` failed
+```
+ansible@CTRL01:~$ kubectl exec -it -n vrf-green jump03 -- curl -I http://webserver.default.svc.cluster.local --connect-timeout 1
+curl: (28) Failed to connect to webserver.default.svc.cluster.local port 80 after 1002 ms: Timeout was reached
+command terminated with exit code 28
+ansible@CTRL01:~$ kubectl exec -it jump01 -- curl http://webserver -I --connect-timeout 1
+HTTP/1.1 200 OK
+Server: nginx/1.29.4
+Date: Sat, 31 Jan 2026 03:08:56 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 09 Dec 2025 18:28:10 GMT
+Connection: keep-alive
+ETag: "69386a3a-267"
+Accept-Ranges: bytes
+```
+
+Now attach the label to `jump03` and test it
+```
+ansible@CTRL01:~$ kubectl label pod jump03 http=true -n vrf-green
+pod/jump03 labeled
+ansible@CTRL01:~$ kubectl exec -it -n vrf-green jump03 -- curl -I http://webserver.default.svc.cluster.local --connect-timeout 1
+HTTP/1.1 200 OK
+Server: nginx/1.29.4
+Date: Sat, 31 Jan 2026 03:09:42 GMT
+Content-Type: text/html
+Content-Length: 615
+Last-Modified: Tue, 09 Dec 2025 18:28:10 GMT
+Connection: keep-alive
+ETag: "69386a3a-267"
+Accept-Ranges: bytes
+```
+
+Much more granular rules can go to [Network Policies](https://kubernetes.io/docs/concepts/services-networking/network-policies/)
+
