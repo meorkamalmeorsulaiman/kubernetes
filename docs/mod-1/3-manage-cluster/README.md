@@ -88,5 +88,5 @@ Taints:             <none>
 ## Lab Practice 
 
 Tasks:
-- Create and run static pod
+- Create and run static pod with image using Nginx. Verified the staticpod after configuration.
 
