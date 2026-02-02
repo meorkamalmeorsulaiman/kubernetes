@@ -351,3 +351,7 @@ Error from server (Forbidden): horizontalpodautoscalers.autoscaling is forbidden
 Error from server (Forbidden): cronjobs.batch is forbidden: User "anna" cannot list resource "cronjobs" in API group "batch" in the namespace "default"
 Error from server (Forbidden): jobs.batch is forbidden: User "anna" cannot list resource "jobs" in API group "batch" in the namespace "default"
 ```
+
+## Lab
+
+Create a Role that allow for viewing Pods in default namespace and create a RoleBinding that allow authenticated user to use this role
