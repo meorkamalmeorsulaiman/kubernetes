@@ -811,5 +811,4 @@ ansible@CTRL-02:~$
 ## Lab Practice
 
 Tasks:
-- Backup Etcd
-- Restore Etcd
+- Backup Etcd and restore Restore Etcd
