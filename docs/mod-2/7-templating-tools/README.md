@@ -243,3 +243,5 @@ test-nginx-friday20   3/3     3            3           3m11s   environment=testi
 ```
 
 ## Lab Practice
+
+Use helm to install Vault Hashicorp application
