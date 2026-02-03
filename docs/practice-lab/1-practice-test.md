@@ -33,6 +33,16 @@ kubectl expose pod vm01 --type=NodePort --port=32022 --target-port=22
 
 - Backup etcd by creating a snapshot
 ```
+#Install etcdctl and etcdutl binaries
+wget https://github.com/etcd-io/etcd/releases/download/v3.6.7/etcd-v3.6.7-linux-amd64.tar.gz
+tar xzf etcd-v3.6.7-linux-amd64.tar.gz -C /tmp/etcd-binaries --strip-components=1 --no-same-owner
+cd /tmp/etcd-binaries/
+sudo mv etcdctl /usr/bin
+sudo mv etcdutl /usr/bin
+etcdctl version
+etcdutl version
+
+#Create snapshot for backup
 sudo etcdctl --endpoints=localhost:2379 \
 --cacert /etc/kubernetes/pki/etcd/ca.crt \
 --server /etc/kubernetes/pki/etcd/server.crt \
