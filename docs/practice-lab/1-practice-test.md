@@ -27,9 +27,43 @@ kubectl get pods
 
 - Deploy a virutal machine `vm01` with ubuntu image and ensure ssh install
 - Expose ssh service for `vm01` with port 32022
+```
+kubectl expose pod vm01 --type=NodePort --port=32022 --target-port=22
+```
+
 - Backup etcd by creating a snapshot
+```
+sudo etcdctl --endpoints=localhost:2379 \
+--cacert /etc/kubernetes/pki/etcd/ca.crt \
+--server /etc/kubernetes/pki/etcd/server.crt \
+--key /etc/kubernetes/pki/etcd/server.key \
+snapshot save /tmp/etcdbackup.db
+```
+
 - Delete the ssh service for `vm01`
+```
+kubectl delete svc vm01
+```
+
 - Restore etcd, ensure that the previous state restored
+```
+#Stop etcd and kube-apiserver pod
+cd /etc/kubernetes/manifest
+sudo mv *.yaml ..
+sudo mv /var/lib/etcd /var/lib/etcd-backup01
+
+#Ensure that the pods stop
+sudo crictl ps
+
+#Proceed to load the backup
+sudo etcdutl snapshot restore /tmp/etcdbackup.db --data-dir /var/lib/etcd
+cd /etc/kubernetes/manifest
+sudo mv ../*.yaml .
+
+#Validate that the both etcd and kube-apiserver are up 
+sudo crictl ps
+kubectl get nodes
+```
 
 ## Upgrades control and worker node
 
