@@ -8,6 +8,16 @@
 ## Static Pod
 
 - Create one static pod using nginx image
+```
+#Generate spec file
+kubectl run static-pod --image=nginx --dry-run=client -o yaml > static-pod.yaml
+
+#Move the spec file to k8s manifest location 
+sudo mv static-pod.yaml /etc/kubernetes/manifests/
+
+#Validate static pod
+kubectl get pods
+```
 
 ## Metrics Server
 
