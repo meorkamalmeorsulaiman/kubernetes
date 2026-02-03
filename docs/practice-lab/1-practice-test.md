@@ -2,7 +2,7 @@
 
 ## Create Cluster
 
-- Deploy a cluster with old version with one control node.
+- Deploy a cluster with version 1.34.1 with one control node.
 - Join a worker node.
 
 ## Static Pod
