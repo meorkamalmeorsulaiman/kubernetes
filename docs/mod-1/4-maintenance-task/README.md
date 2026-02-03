@@ -476,7 +476,13 @@ pod/calico-kube-controllers-7498b9bb4c-4zzpx evicted
 node/ctrl-01 drained
 ```
 
-Upgrade the `kubelet` and `kubectl` using `sudo apt-mark unhold kubelet kubectl && sudo apt-get update && sudo apt-get install -y kubelet='1.34.3-*' kubectl='1.34.3-*' && sudo apt-mark hold kubelet kubectl`
+Upgrade the `kubelet` and `kubectl` using 
+```
+sudo apt-mark unhold kubelet kubectl && sudo apt-get update && \
+sudo apt-get install -y kubelet='1.34.3-*' kubectl='1.34.3-*' && \
+sudo apt-mark hold kubelet kubectl
+```
+
 Then restart the service
 ```
 sudo systemctl daemon-reload
@@ -519,33 +525,20 @@ ansible@WRK-01:~$ kubectl drain <node-to-drain^C--ignore-daemonsets
 ```
 4. Then drain before upgrading `kubelet` and `kubectl` using `kubectl drain wrk-01 --ignore-daemonsets --delete-emptydir-data`
 ```
-ansible@CTRL-01:~$ kubectl drain wrk-01 --ignore-daemonsets --delete-emptydir-data
-node/wrk-01 already cordoned
-Warning: ignoring DaemonSet-managed Pods: kube-system/calico-node-g9rr5, kube-system/kube-proxy-kgbt8
-evicting pod kube-system/metrics-server-6b77496796-lh5lp
-evicting pod kube-system/coredns-66bc5c9577-t9hb7
-evicting pod kube-system/coredns-66bc5c9577-z5b2p
-evicting pod kube-system/calico-kube-controllers-7498b9bb4c-gn6tq
-pod/calico-kube-controllers-7498b9bb4c-gn6tq evicted
-pod/metrics-server-6b77496796-lh5lp evicted
-pod/coredns-66bc5c9577-t9hb7 evicted
-pod/coredns-66bc5c9577-z5b2p evicted
-node/wrk-01 drained
+#On control node
+kubectl drain wrk-01 --ignore-daemonsets
 ```
+
 5. Proceed to upgrade `kubelet` and `kubectl` using
 ```
 sudo apt-mark unhold kubelet kubectl && \
 sudo apt-get update && sudo apt-get install -y kubelet='1.34.3-*' kubectl='1.34.3-*' && \
 sudo apt-mark hold kubelet kubectl
 ```
-6. Once finished, restart the process. By this time, the new version can be validate fron the contorl node.
-```
-ansible@CTRL-01:~$ kubectl get nodes
-NAME      STATUS                     ROLES           AGE     VERSION
-ctrl-01   Ready                      control-plane   5h49m   v1.34.3
-wrk-01    Ready,SchedulingDisabled   <none>          5h40m   v1.34.3
-```
-7. Proceed to uncordon worker node
+
+6. Once finished, reload daemon and restart kubelet. 
+
+7. Proceed to uncordon worker node and validate the patch work
 ```
 ansible@CTRL-01:~$ kubectl get nodes
 NAME      STATUS   ROLES           AGE     VERSION
