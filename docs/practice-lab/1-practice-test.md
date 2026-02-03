@@ -45,7 +45,7 @@ etcdutl version
 #Create snapshot for backup
 sudo etcdctl --endpoints=localhost:2379 \
 --cacert /etc/kubernetes/pki/etcd/ca.crt \
---server /etc/kubernetes/pki/etcd/server.crt \
+--cert /etc/kubernetes/pki/etcd/server.crt \
 --key /etc/kubernetes/pki/etcd/server.key \
 snapshot save /tmp/etcdbackup.db
 ```
