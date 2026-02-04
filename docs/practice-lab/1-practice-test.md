@@ -2,8 +2,48 @@
 
 ## Create Cluster
 
+### Deploy K8s Cluster
 - Deploy a cluster with version 1.34.1 with one control node.
 - Join a worker node.
+
+### Deploy K8s HA Cluster
+- Use the scipts to install CRI, kubetools and load-balancer setup
+- Configure HA cluster with 3 control plane and 2 worker nodes
+- Ensure that the control plane node can be use as a client as well
+```
+#On all nodes
+sudo apt install git 
+git clone https://github.com/sandervanvugt/cka.git
+cd cka
+sudo sh setup-container-previous-version.sh
+sudo sh setup-kubetools-previousversion.sh 
+
+#On master node
+cd cka
+sed -i 's/192.168.29.100/192.168.101.10/g' keepalived.conf
+sed -i 's/192.168.29.100/192.168.101.10/g' check_apiserver.sh
+sed -i 's/ens33/eth0/g' keepalived.conf
+sh setup-lb-ubuntu.sh
+ip 
+
+#Initialize cluster and install CNI plugin on master node
+sudo kubeadm init --control-plane-endpoint "192.168.101.10:6443" --upload-certs
+
+#Setup kubectl and install CNI Plugin on master node
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+kubectl apply -f  https://docs.projectcalico.org/manifests/calico.yaml
+
+#Join cluster for control node
+sudo kubeadm join 192.168.101.10:6443 --token ne88rc.i0hyvcxpsmsywv34 \
+--discovery-token-ca-cert-hash sha256:0e8c8f67d56d1b2703d12c07127a173a28f9d2d3314cdeb5a21c6533d60c435c \
+--control-plane --certificate-key 51ae26989dec706c6ab9e1d4f9048269ce2583d04526134dbba159f00528978f
+
+#Join cluster for worker node
+sudo kubeadm join 192.168.101.10:6443 --token ne88rc.i0hyvcxpsmsywv34 \
+--discovery-token-ca-cert-hash sha256:0e8c8f67d56d1b2703d12c07127a173a28f9d2d3314cdeb5a21c6533d60c435c
+```
 
 ## Manage Cluster
 
@@ -165,8 +205,6 @@ sudo systemctl restart kubelet
 kubectl get nodes
 kubectl uncordon wrk01
 ```
-
-### Deploy HA Cluster
 
 ## Security
 
