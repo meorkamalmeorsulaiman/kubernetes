@@ -167,6 +167,9 @@ kubectl uncordon wrk01
 ```
 
 ### Deploy HA Cluster
+- Configure HA cluster with 3 control plane and 2 worker nodes
+- Ensure that the control plane node can be use as a client as well
+- Use the scipts to install CRI, kubetools and load-balancer setup
 
 ## Security
 
