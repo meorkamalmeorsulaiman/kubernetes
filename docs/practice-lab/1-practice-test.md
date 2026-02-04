@@ -21,7 +21,14 @@ kubectl get pods
 
 ## Metrics Server
 
-- Install metrics server 
+- Install metrics server
+```
+#Deploy metrics-server
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.8.1/components.yaml
+
+#Edit deployment so that it will ignore tls - kubelet-ignore-tls
+kubectl edit deploy -n kube-system metrics-server
+```
 
 ## Backup and Restore etcd
 
