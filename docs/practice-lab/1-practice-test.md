@@ -5,7 +5,9 @@
 - Deploy a cluster with version 1.34.1 with one control node.
 - Join a worker node.
 
-## Static Pod
+## Manage Cluster
+
+### Static Pod
 
 - Create one static pod using nginx image
 ```
@@ -19,7 +21,12 @@ sudo mv static-pod.yaml /etc/kubernetes/manifests/
 kubectl get pods
 ```
 
-## Metrics Server
+### Drain
+- Drain a worker node in the cluster
+
+## Maintenance Task
+
+### Metrics Server
 
 - Install metrics server
 ```
@@ -30,8 +37,7 @@ kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/down
 kubectl edit deploy -n kube-system metrics-server
 ```
 
-## Backup and Restore etcd
-
+### Backup and Restore etcd
 - Deploy a virutal machine `vm01` with ubuntu image and ensure ssh install
 - Expose ssh service for `vm01` with port 32022
 ```
@@ -82,10 +88,10 @@ sudo crictl ps
 kubectl get nodes
 ```
 
-## Upgrades control and worker node
-
+### Upgrades control and worker node
 - Update control and worker to latest v1.34
-### Control Node
+
+#### Control Node
 ```
 #Update repo to new version
 sudo sed -i 's/v1.34/v1.35/g' /etc/apt/sources.list.d/kubernetes.list 
@@ -125,7 +131,7 @@ kubectl uncordon ctrl01
 kubectl get nodes
 ```
 
-### Worker Node
+#### Worker Node
 ```
 #Update repo to new version
 sudo sed -i 's/v1.34/v1.35/g' /etc/apt/sources.list.d/kubernetes.list 
@@ -159,3 +165,41 @@ sudo systemctl restart kubelet
 kubectl get nodes
 kubectl uncordon wrk01
 ```
+
+### Deploy HA Cluster
+
+## Security
+
+### RBAC
+
+## Deploy Application
+
+### Provision a Pod using Deployment
+- Start a deployment consists of:
+  - Web service running nginx in default namespace
+  - Replica should be 3
+  - Service run on 32080 for http connection
+
+### DeamonSet
+
+### StatefulSet
+
+### InitContainer
+
+### Scale Application
+
+### Horizontal Pod AutoScaler
+
+### SideCar
+
+## Networking
+
+### Service Name
+- Create a webservice on port 80 in default namespace
+- Expose the service using port 32080
+- Create a `jumpbox02` in prod namesapce and `jumpbox03` in dev namespace running ubuntu and install curl
+- Test access to webservie using name
+
+### Network Policies
+- Create a webservice in dev and prod namespace
+- Ensure that the the webservice can be accessible from the same jumpbox namespace only
