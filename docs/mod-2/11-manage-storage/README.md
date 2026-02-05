@@ -144,3 +144,7 @@ ansible@WRK01:~$ ls /mydata/
 hellofile
 ```
 >**Note:** to trace the directory for PV use `kubectl describe pv PV-NAME | grep Path`
+
+## Volume Reclaim
+
+The `persistentVolumeReclaimPolicy` is set on PV to set it behaviour once it no longer bound to PVC. `Retain` is the default value that it will be left in its current which is release, such that it can be manually reclaimed by an administrator. `Delete` means taht the PV will be deleted once it is released. `Recycle` means that the PV will be recycle back into the pool of unused PVs.
