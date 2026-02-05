@@ -223,3 +223,10 @@ replicaset.apps/webservice-85655f6dfc   0         0         0       7m40s
 ansible@CTRL01:~$ curl http://10.102.56.152:32080
 hello world
 ```
+
+## Lab practice
+
+- Create a PersistentVolume using HostPath storage type to access the directory `/storage`
+- Create an index.thml inside `/storage`
+- Run a webservice pod with nginx and mount the HostPath on to `/usr/share/nginx/html`
+- Expose the pod to validate the webservice hompage.
