@@ -152,4 +152,74 @@ The `persistentVolumeReclaimPolicy` is set on PV to set it behaviour once it no 
 
 ## ConfigMaps and Secret as Volumes
 
-It is a volume that allow a container in a pod to mount a file to a volume. This is useful to mount a config file.
+It is a volume that allow a container in a pod to mount a file to a volume. This is useful to mount a config file. 1st we create a the file 
+```
+echo hello world > index.html
+```
+
+Then create the configMap
+```
+kubectl create cm web-home-page --from-file=index.html
+rm index.html
+```
+
+Validate the configMap content
+```
+kubectl describe cm web-home-page
+```
+
+Then create a webservice deployment
+```
+kubectl create deploy webservice --image=nginx
+```
+
+The add the configMap and volume mount in the pod container
+```
+kubectl edit deploy webservice
+
+#Add below section under pod spec
+    spec:
+      volumes:
+        - name: cmvol
+          configMap:
+            name: web-home-page
+#Add section below under container spec
+      containers:
+      - image: nginx
+        volumeMounts:
+          - mountPath: /usr/share/nginx/html
+            name: cmvol
+```
+
+We can check the file should be mounted to the `mountPath`
+```
+ansible@CTRL01:~$ kubectl exec -it webservice-78cf8c5995-cm7hd -- ls /usr/share/nginx/html
+index.html
+```
+
+We can test the web home page by exposing the deployment
+```
+ansible@CTRL01:~$ kubectl expose deploy webservice --port=32080 --target-port=80
+service/webservice exposed
+ansible@CTRL01:~$ kubectl get pod
+NAME                          READY   STATUS    RESTARTS      AGE
+pod-vol                       2/2     Running   4 (10m ago)   130m
+webservice-78cf8c5995-cm7hd   1/1     Running   0             117s
+ansible@CTRL01:~$ kubectl get all
+NAME                              READY   STATUS    RESTARTS      AGE
+pod/pod-vol                       2/2     Running   4 (10m ago)   130m
+pod/webservice-78cf8c5995-cm7hd   1/1     Running   0             2m2s
+
+NAME                 TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)     AGE
+service/kubernetes   ClusterIP   10.96.0.1       <none>        443/TCP     26h
+service/webservice   ClusterIP   10.102.56.152   <none>        32080/TCP   10s
+
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/webservice   1/1     1            1           7m40s
+
+NAME                                    DESIRED   CURRENT   READY   AGE
+replicaset.apps/webservice-78cf8c5995   1         1         1       2m2s
+replicaset.apps/webservice-85655f6dfc   0         0         0       7m40s
+ansible@CTRL01:~$ curl http://10.102.56.152:32080
+hello world
+```
