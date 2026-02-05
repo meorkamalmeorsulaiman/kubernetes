@@ -148,3 +148,8 @@ hellofile
 ## Volume Reclaim
 
 The `persistentVolumeReclaimPolicy` is set on PV to set it behaviour once it no longer bound to PVC. `Retain` is the default value that it will be left in its current which is release, such that it can be manually reclaimed by an administrator. `Delete` means taht the PV will be deleted once it is released. `Recycle` means that the PV will be recycle back into the pool of unused PVs.
+
+
+## ConfigMaps and Secret as Volumes
+
+It is a volume that allow a container in a pod to mount a file to a volume. This is useful to mount a config file.
