@@ -230,6 +230,27 @@ kubectl uncordon wrk01
 
 ### SideCar
 
+## Templating
+
+- Setup helm
+- Install HashiCorp Vault using Helm
+
+## Scheduling
+
+### Node Preference
+
+- Deploy an application and an sure that it will deploy on a specific node using `nodeSelector`
+
+### Node Affinity
+
+- Affinity setup - name `COLORS`:
+  - `wrk01` - GREEN
+  - `wrk02` - BLUE
+  - `wrk03` - RED
+- Deploy an app where it will use BLUE color and wont able to run if the rule aren't met.
+
+## App Access
+
 ## Networking
 
 ### Service Name
