@@ -280,3 +280,9 @@ kubectl uncordon wrk01
 ### Network Policies
 - Create a webservice in dev and prod namespace
 - Ensure that the the webservice can be accessible from the same jumpbox namespace only
+
+## Storage
+
+- Create a Pod Volumes - PV
+- Claim the PV using persistentVolumeClaim
+- Deploy a Pod with nginx and mount the directory to /mydata
