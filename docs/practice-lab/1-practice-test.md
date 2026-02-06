@@ -283,6 +283,7 @@ kubectl uncordon wrk01
 
 ## Storage
 
-- Create a Pod Volumes - PV
-- Claim the PV using persistentVolumeClaim
-- Deploy a Pod with nginx and mount the directory to /mydata
+- Create a PersistentVolume using HostPath storage type to access the directory `/storage`
+- Create an index.thml inside `/storage`
+- Run a webservice pod with nginx and mount the HostPath on to `/usr/share/nginx/html`
+- Expose the pod to validate the webservice hompage.
