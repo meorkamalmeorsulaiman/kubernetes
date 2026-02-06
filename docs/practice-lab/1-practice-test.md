@@ -249,7 +249,25 @@ kubectl uncordon wrk01
   - `wrk03` - RED
 - Deploy an app where it will use BLUE color and wont able to run if the rule aren't met.
 
+### Inter-Pod Affinity
+
+### Anti-Affinity
+
+### Quota
+
 ## App Access
+
+### Service
+
+- Deploy a jump server running ubuntu and setup ssh with user lab
+- Expose ssh to port 32022 that is accessible from Node IP
+
+### Ingress Controller
+
+### Gateway API
+
+- Run a deployment name cka-web with 3 nginx replicas.
+- Expose the webservice and accessible using FQDN - cka.mmkmss.com
 
 ## Networking
 
