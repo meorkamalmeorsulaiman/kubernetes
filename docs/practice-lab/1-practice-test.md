@@ -230,6 +230,45 @@ kubectl uncordon wrk01
 
 ### SideCar
 
+## Templating
+
+- Setup helm
+- Install HashiCorp Vault using Helm
+
+## Scheduling
+
+### Node Preference
+
+- Deploy an application and an sure that it will deploy on a specific node using `nodeSelector`
+
+### Node Affinity
+
+- Affinity setup - name `COLORS`:
+  - `wrk01` - GREEN
+  - `wrk02` - BLUE
+  - `wrk03` - RED
+- Deploy an app where it will use BLUE color and wont able to run if the rule aren't met.
+
+### Inter-Pod Affinity
+
+### Anti-Affinity
+
+### Quota
+
+## App Access
+
+### Service
+
+- Deploy a jump server running ubuntu and setup ssh with user lab
+- Expose ssh to port 32022 that is accessible from Node IP
+
+### Ingress Controller
+
+### Gateway API
+
+- Run a deployment name cka-web with 3 nginx replicas.
+- Expose the webservice and accessible using FQDN - cka.mmkmss.com
+
 ## Networking
 
 ### Service Name
@@ -241,3 +280,10 @@ kubectl uncordon wrk01
 ### Network Policies
 - Create a webservice in dev and prod namespace
 - Ensure that the the webservice can be accessible from the same jumpbox namespace only
+
+## Storage
+
+- Create a PersistentVolume using HostPath storage type to access the directory `/storage`
+- Create an index.thml inside `/storage`
+- Run a webservice pod with nginx and mount the HostPath on to `/usr/share/nginx/html`
+- Expose the pod to validate the webservice hompage.
