@@ -15,7 +15,7 @@ What is needed?
 
 ### Setting up NFS
 
-Install `nfs-server` on the control node
+Install `nfs-server` on the control node or it can be a seperate server
 ```
 sudo apt install nfs-server
 ```
@@ -25,7 +25,7 @@ Install `nfs-client` on the worker nodes
 sudo apt install nfs-client
 ```
 
-Setup the share directory on the server
+Setup the share directory on the server - on storage node
 ```
 sudo mkdir /nfsexport
 sudo sh -c  'echo "/nfsexport *(rw,no_root_squash)" > /etc/exports'
@@ -121,4 +121,86 @@ Then validate that it should be created in the NFS mount
 ```
 ansible@CTRL01:~$ ls /nfsexport/default-nfs-pvc-auto-prov-pvc-5653150f-1aa6-444c-9426-68e6a7b328b8/
 hellofile
+```
+
+### Shared storage and replicas
+
+1st we deploy a new pvc
+```
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: webservice-pvc-auto-prov
+spec:
+  storageClassName: nfs-client # SAME NAME AS THE STORAGECLASS
+  accessModes:
+    - ReadWriteMany #  must be the same as PersistentVolume
+  resources:
+    requests:
+      storage: 50Mi
+```
+
+We can deploy multiple replicas
+```
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webservice
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: webservice
+  template:
+    metadata:
+      labels:
+        app: webservice
+    spec:
+      containers:
+      - name: webservice-nginx
+        image: nginx 
+        ports:
+        - containerPort: 80
+        volumeMounts:
+        - name: pvc-storage
+          mountPath: "/usr/share/nginx/html" # Path inside the container where the volume will be mounted
+      volumes:
+      - name: pvc-storage # Name of the volume, matching the volumeMounts name
+        persistentVolumeClaim:
+          claimName: webservice-pvc-auto-prov # Name of the PVC created in the previous step
+```
+
+Expose the deployment
+```
+kubectl expose deploy webservice --type=NodePort --port=32080 --target-port=80
+```
+
+Now we can create a homepage from the nfs directory
+```
+echo "Homepage for nginx deployment stored in the nfs storage" > /nfsexport/default-webservice-pvc-auto-prov-pvc-[UUID]/index.html
+```
+
+We should test on all worker node - should have the same content
+```
+ansible@CTRL01:~$ curl wrk01:31969
+Homepage for nginx deployment stored in the nfs storage
+ansible@CTRL01:~$ curl wrk02:31969
+Homepage for nginx deployment stored in the nfs storage
+ansible@CTRL01:~$ curl wrk03:31969
+Homepage for nginx deployment stored in the nfs storage
+```
+
+Let's make a change on the html, it should be reflected
+```
+echo "Update homepage from nfs storage" > /nfsexport/default-webservice-pvc-auto-prov-pvc-2fd2be1f-dcf3-453f-94f1-386f289b9cbb/index.html
+```
+
+Let's test
+```
+ansible@CTRL01:~$ curl wrk01:31969
+Update homepage from nfs storage
+ansible@CTRL01:~$ curl wrk02:31969
+Update homepage from nfs storage
+ansible@CTRL01:~$ curl wrk03:31969
+Update homepage from nfs storage
 ```
