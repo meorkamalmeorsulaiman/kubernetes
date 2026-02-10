@@ -30,3 +30,18 @@ nginx: worker process#
 # cat /proc/30/cmdline
 nginx: worker process# 
 ```
+
+## Troubleshooting K8s application
+
+### Troubleshooting Pod
+
+1st step is to use `kubectl get pod` for generic overview of the Pod. Pod can be in any of these states:
+- Pending - already configured in etcd and waiting to schedule on eligible node
+- Running - it is healthy 
+- Succeeded - Pod has done it work and there is no need to restart 
+- Failed - one or more Pod or container have ended with an error code and will not be restarted
+- Unknown - state could not be obtained, often related to network issue
+- Completed - Pod has run to completion
+- CrashLoopBackOff - the pod generated an error, but still the scheduler try to run it
+
+If `kubectl get` doesn't provided enough infomation then proceed to use `kubectl describe` to get more info.
