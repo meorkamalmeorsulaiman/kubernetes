@@ -45,3 +45,14 @@ nginx: worker process#
 - CrashLoopBackOff - the pod generated an error, but still the scheduler try to run it
 
 If `kubectl get` doesn't provided enough infomation then proceed to use `kubectl describe` to get more info.
+
+## Troubleshooting Cluster Nodes
+
+- Use `kubectl cluster-info` to get the generic cluster health. 
+- Use `kubectl cluster-info dump` for more details
+- For checking the node status and health in the cluster use `kubectl get nodes` 
+- Check the node condition using `kubectl describe node [NODE]'
+- It is also important to check the K8s core service status using `kubectl get pod -n kube-system`
+- One the host, use `sudo systemctl status kubelet` to check the kubelet service. If require you can also restart it
+- To check certificate validity, use `sudo openssl x509 -in /var/lib/kubelet/pki/kubelet.crt -text`
+- To ensure connectivity between workers, check the `kube-proxy` pod in the `kube-system` namespace
