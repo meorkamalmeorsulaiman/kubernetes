@@ -9,7 +9,7 @@ In this topic we learn how what is required to deploy a K8s cluster.
 3. [Initializing Cluster on Control Node]()
 4. [Installing CNI Plugin on Control Node]()
 5. [Join a Cluster for Worker Node]()
-6. [Initializing Cluster with config file]()
+6. [Initialize a cluster using manifest or config file]()
 
 
 ## Setting up Host node for K8s
@@ -144,15 +144,33 @@ Once joined, you can validate the node status in the control node and wait until
 kubectl get nodes
 ```
 
-## Setting up cluster using config file
+## Initialize a cluster using manifest or config file
 
-Use `sudo kubeadm config print init-defaults > config.yaml` to write all configuration parameters to `config.yaml` Edit the `config.yaml` with all desired parameters
-- Set a least the following parameters:
-     - localAPIEndpoint.advertiseAddress
-          - Valid IP address on which the apiserver is available
-    - nodeRegistration.name
-          - The name of the apiservernode
-Next, use `sudo kubeadm init --config config.yaml` to use the `config.yaml` file while installing the cluster
+To initialize using config file, we have to populate it. We can quickly get the template using below command:
+```
+udo kubeadm config print init-defaults > config.yaml
+```
+
+The few option we need to edit:
+
+1. local API endpoint set to the control node IP
+```
+localAPIEndpoint:
+  advertiseAddress: 192.168.101.11
+```
+
+2. The registration node name which should be the hostname
+```
+nodeRegistration:
+  name: ctrl01
+```
+
+Then save the file and supply the config during the cluster initialization as below:
+```
+sudo kubeadm init --config config.yaml
+```
+
+Once done, it should be similar to what the process as during the init only command.
 
 ## Lab Practice
 
