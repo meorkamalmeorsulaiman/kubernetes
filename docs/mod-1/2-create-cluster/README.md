@@ -4,12 +4,12 @@ In this topic we learn how what is required to deploy a K8s cluster.
 
 ## Table of Content
 
-1. [Setting up Host]()
-2. [Installing Container Runtime and K8s Tools]()
-3. [Initializing Cluster on Control Node]()
-4. [Installing CNI Plugin on Control Node]()
-5. [Join a Cluster for Worker Node]()
-6. [Initialize a cluster using manifest or config file]()
+1. [Setting up Host](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/2-create-cluster#setting-up-host-node-for-k8s)
+2. [Installing Container Runtime and K8s Tools](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/2-create-cluster#installing-container-runtime-and-k8s-tools)
+3. [Initializing Cluster on Control Node](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/2-create-cluster#initializing-cluster-on-control-node)
+4. [Installing CNI Plugin on Control Node](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/2-create-cluster#installing-cni-plugin-on-control-node)
+5. [Join a Cluster for Worker Node](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/2-create-cluster#joining-k8s-cluster-on-worker-node)
+6. [Initialize a cluster using manifest or config file](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/2-create-cluster#initialize-a-cluster-using-manifest-or-config-file)
 
 
 ## Setting up Host node for K8s
