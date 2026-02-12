@@ -9,7 +9,7 @@ In this topic we learn how what is required to deploy a K8s cluster.
 3. [Initializing Cluster on Control Node]()
 4. [Installing CNI Plugin on Control Node]()
 5. [Join a Cluster for Worker Node]()
-6. [Initializing Cluster with config file]()
+6. [Initialize a cluster using manifest or config file]()
 
 
 ## Setting up Host node for K8s
