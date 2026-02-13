@@ -77,32 +77,21 @@ kubectl get pods
 ## Node states
 
 Sometime you need to manage or bring out of service. Few options:
-- `kubectl cordon` to mark a node as unschedule
-- `kubectl drain` to mark a node as unscheduleable and remove all running Pods
-- `kubectl uncordon` to normalize
+- Cordon -  to mark a node as unschedule
+- Drain -  to mark a node as unscheduleable and remove all running Pods
+- Uncordon - to normalize
 
-Cordon a node of `wrk-01`
+
+To cordon a node use below command:
 ```
-ansible@CTRL-01:~$ kubectl cordon wrk-01
-node/wrk-01 cordoned
-ansible@CTRL-01:~$ kubectl get nodes
-NAME      STATUS                     ROLES           AGE   VERSION
-ctrl-01   Ready                      control-plane   29m   v1.33.7
-wrk-01    Ready,SchedulingDisabled   <none>          21m   v1.33.7
-ansible@CTRL-01:~$ kubectl describe node wrk-01 | grep -i taint
-Taints:             node.kubernetes.io/unschedulable:NoSchedule
+kubectl cordon wrk01
+kubectl get nodes
+kubectl describe nodes wrk01 | grep Taints
 ```
 
-Normalize
+To normalize use
 ```
-ansible@CTRL-01:~$ kubectl uncordon wrk-01
-node/wrk-01 uncordoned
-ansible@CTRL-01:~$ kubectl get nodes
-NAME      STATUS   ROLES           AGE   VERSION
-ctrl-01   Ready    control-plane   30m   v1.33.7
-wrk-01    Ready    <none>          22m   v1.33.7
-ansible@CTRL-01:~$ kubectl describe node wrk-01 | grep -i taint
-Taints:             <none>
+kubectl uncordon wrk01
 ```
 
 ## Node service
