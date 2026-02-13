@@ -74,7 +74,7 @@ Or in the control node
 kubectl get pods
 ```
 
-## Node states
+## Manage Node states
 
 Sometime you need to manage or bring out of service. Few options:
 - Cordon -  to mark a node as unschedule
@@ -94,10 +94,18 @@ To normalize use
 kubectl uncordon wrk01
 ```
 
-## Node service
+## Manage Node service
 
-## Lab Practice 
+As of now, the service that runs K8s are:
+1. containerd
+2. kubelet
 
-Tasks:
-- Create and run static pod with image using Nginx. Verified the staticpod after configuration.
-
+So we need to make sure that these services working correctly. We can check the individual service using `systemctl` and `journalctl` to check any logs. To further check the running processes us `ps` as below
+```
+sudo systemctl status containerd
+sudo systemctl status kubelet
+sudo journalctl -u containerd
+sudo journalctl -u kubelet
+ps afx | grep containerd
+ps afx | grep kubelet
+```
