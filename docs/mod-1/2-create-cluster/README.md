@@ -171,12 +171,3 @@ sudo kubeadm init --config config.yaml
 ```
 
 Once done, it should be similar to what the process as during the init only command.
-
-## Lab Practice
-
-Task 1:
-- Deploy K8s standalone cluster using `kubeadm`
-
-Task 2:
-- Deploy K8s standalone cluster using config file
-
