@@ -3,11 +3,11 @@
 This section is working on managing the K8s cluster
 
 ## Table of Content
-1. [Analyze Cluster Node]()
-2. [Manage Node Container using crictl]()
-3. [Static Pod]()
-4. [Manage Node State]()
-5. [Manage Node Service]()
+1. [Analyze Cluster Node](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/3-manage-cluster#analyze-cluster-node)
+2. [Manage Node Container using crictl](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/3-manage-cluster#manage-node-container-using-crictl)
+3. [Static Pod](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/3-manage-cluster#static-pod)
+4. [Manage Node State](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/3-manage-cluster#manage-node-states)
+5. [Manage Node Service](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/3-manage-cluster#manage-node-service)
 
 ## Analyze Cluster Node
 
