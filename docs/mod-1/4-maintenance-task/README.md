@@ -207,6 +207,8 @@ kubectl uncordon ctrl01
 kubectl get nodes
 ```
 
+If running an HA setup, you can repeat same setup but the upgrade of kubeadm command should be `sudo kubeadm upgrade node`
+
 ## Upgrade worker node
 
 The process are similar to the control node, but using different command
