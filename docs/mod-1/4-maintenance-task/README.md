@@ -15,7 +15,7 @@ Steps for maintenance work within the cluster. This topic divided into several s
 
 ## Metric Server for Performance Metrics
 
-Not part of vanilla, have to install separately. metrics-server allow us to get k8s performance metrics. Repo can be accessible from here: [Metrics Server SiGS](https://github.com/kubernetes-sigs/metrics-server) Below is to install the metric server
+Metrics-server allow us to get k8s performance metrics. Repo can be accessible from here: [Metrics Server SiGS](https://github.com/kubernetes-sigs/metrics-server) Below is to install the metric server
 ```
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 ```
@@ -103,39 +103,22 @@ Procedures for restoring etcd:
 4. Then proceed to restore using `sudo etcdctl snapshot restore /tmp/backup --data-dir /var/lib/etcd`
 5. Proceed to move back the pod files into `/etc/kubernetes/manifests/*` and validate using `sudo crictl ps` to check the pod started
 
-Start by delete the service to see the restoration different
-```
-kubectl delete svc vm01
-kubectl get all
-```
 
 Let's move the pod files to other directory 
 ```
-cd /etc/kubernetes/pki/etcd
+cd /etc/kubernetes/manifests
 sudo mv *.yaml ..
 sudo mv /var/lib/etcd /var/lib/etcd-backup01
 ```
 
 Validate that the pod for `etcd` and `kube-apiserver` gone
 ```
-ansible@CTRL01:/etc/kubernetes/manifests$ sudo crictl ps
-CONTAINER           IMAGE               CREATED             STATE               NAME                      ATTEMPT             POD ID              POD                                       NAMESPACE
-4bb7300420cdb       5e785d005ccc1       10 minutes ago      Running             calico-kube-controllers   0                   e2b7941cf7dbd       calico-kube-controllers-b45f49df6-w44k9   kube-system
-ea82fb95017c4       52546a367cc9e       10 minutes ago      Running             coredns                   0                   dc70f459f8b46       coredns-66bc5c9577-wwlbq                  kube-system
-7d85462772045       52546a367cc9e       10 minutes ago      Running             coredns                   0                   12669b963bb2d       coredns-66bc5c9577-vps6t                  kube-system
-6b0972c8720d9       08616d26b8e74       10 minutes ago      Running             calico-node               0                   b7064915292b1       calico-node-vd287                         kube-system
-2a4d9147e1d25       36eef8e07bdd6       11 minutes ago      Running             kube-proxy                0                   09e7792efcba1       kube-proxy-gvbfq                          kube-system
+sudo crictl ps
 ```
 
 Once, proceed to restore the backup with
 ```
 sudo etcdutl snapshot restore /tmp/etcdbackup.db --data-dir /var/lib/etcd
-```
-
-Check the library populated
-```
-ansible@CTRL01:/etc/kubernetes/manifests$ sudo ls /var/lib/etcd
-member
 ```
 
 Revert the static pod files
@@ -147,28 +130,12 @@ ls
 
 Then check the pods, etcd and kube-apiserver should be running and stable
 ```
-ansible@CTRL01:/etc/kubernetes/manifests$ sudo crictl ps
-CONTAINER           IMAGE               CREATED              STATE               NAME                      ATTEMPT             POD ID              POD                                       NAMESPACE
-7010390af23b2       aec12dadf56dd       About a minute ago   Running             kube-scheduler            0                   6f0446a06f2b6       kube-scheduler-ctrl01                     kube-system
-3c585838bf9f8       5826b25d990d7       About a minute ago   Running             kube-controller-manager   0                   7ae3a4a9adeb9       kube-controller-manager-ctrl01            kube-system
-5c075f3ab5966       a3e246e9556e9       About a minute ago   Running             etcd                      0                   1fdfe72e3db50       etcd-ctrl01                               kube-system
-c14bfc860b59d       aa27095f56193       About a minute ago   Running             kube-apiserver            0                   1035a1f7b5e35       kube-apiserver-ctrl01                     kube-system
-94419f2b1ce67       5e785d005ccc1       About a minute ago   Running             calico-kube-controllers   2                   e2b7941cf7dbd       calico-kube-controllers-b45f49df6-w44k9   kube-system
-ea82fb95017c4       52546a367cc9e       14 minutes ago       Running             coredns                   0                   dc70f459f8b46       coredns-66bc5c9577-wwlbq                  kube-system
-7d85462772045       52546a367cc9e       14 minutes ago       Running             coredns                   0                   12669b963bb2d       coredns-66bc5c9577-vps6t                  kube-system
-6b0972c8720d9       08616d26b8e74       14 minutes ago       Running             calico-node               0                   b7064915292b1       calico-node-vd287                         kube-system
-2a4d9147e1d25       36eef8e07bdd6       14 minutes ago       Running             kube-proxy                0                   09e7792efcba1       kube-proxy-gvbfq                          kube-system
+sudo crictl ps
 ```
 
 Check pods and svc which should be restored
 ```
-ansible@CTRL01:/etc/kubernetes/manifests$ kubectl get all
-NAME       READY   STATUS    RESTARTS   AGE
-pod/vm01   1/1     Running   0          12m
-
-NAME                 TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)           AGE
-service/kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP           14m
-service/vm01         NodePort    10.101.39.23   <none>        32022:30381/TCP   11m
+kubectl get all
 ```
 
 ## Upgrade control node
