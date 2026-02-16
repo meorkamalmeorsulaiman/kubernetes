@@ -73,6 +73,9 @@ To use backup etcd we need to spcify the etcd API endpoint including the cacert,
 ```
 ps aux | grep etcd
 ```
+
+Or it is actually located in
+```
 /etc/kubernetes/pki/etcd/
 ```
 
