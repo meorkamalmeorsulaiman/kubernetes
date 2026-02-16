@@ -64,14 +64,16 @@ etcdctl version
 etcdutl version
 ```
 
-- In older `etcdctl` use wrong API vesion by default, has to fix by using `sudo ETCDCTL_API=3 etcdctl ... snapshot save`
-- To use `etcdctl` we need to spcify the etcd API endpoint including the cacert, cert, and key to be used
-- The values can be found using `ps aux | grep etcd` or inside `/etc/kubernetes/pki/etcd/`
+In older `etcdctl` use wrong API vesion by default, has to fix by using 
 ```
-ansible@CTRL01:~$ sudo ps afx | grep etcd
-   8364 pts/0    S+     0:00              \_ grep --color=auto etcd
-   4145 ?        Ssl    0:08  \_ etcd --advertise-client-urls=https://192.168.101.11:2379 --cert-file=/etc/kubernetes/pki/etcd/server.crt --client-cert-auth=true --data-dir=/var/lib/etcd --feature-gates=InitialCorruptCheck=true --initial-advertise-peer-urls=https://192.168.101.11:2380 --initial-cluster=ctrl01=https://192.168.101.11:2380 --key-file=/etc/kubernetes/pki/etcd/server.key --listen-client-urls=https://127.0.0.1:2379,https://192.168.101.11:2379 --listen-metrics-urls=http://127.0.0.1:2381 --listen-peer-urls=https://192.168.101.11:2380 --name=ctrl01 --peer-cert-file=/etc/kubernetes/pki/etcd/peer.crt --peer-client-cert-auth=true --peer-key-file=/etc/kubernetes/pki/etcd/peer.key --peer-trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt --snapshot-count=10000 --trusted-ca-file=/etc/kubernetes/pki/etcd/ca.crt --watch-progress-notify-interval=5s
-   4153 ?        Ssl    0:20  \_ kube-apiserver --advertise-address=192.168.101.11 --allow-privileged=true --authorization-mode=Node,RBAC --client-ca-file=/etc/kubernetes/pki/ca.crt --enable-admission-plugins=NodeRestriction --enable-bootstrap-token-auth=true --etcd-cafile=/etc/kubernetes/pki/etcd/ca.crt --etcd-certfile=/etc/kubernetes/pki/apiserver-etcd-client.crt --etcd-keyfile=/etc/kubernetes/pki/apiserver-etcd-client.key --etcd-servers=https://127.0.0.1:2379 --kubelet-client-certificate=/etc/kubernetes/pki/apiserver-kubelet-client.crt --kubelet-client-key=/etc/kubernetes/pki/apiserver-kubelet-client.key --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname --proxy-client-cert-file=/etc/kubernetes/pki/front-proxy-client.crt --proxy-client-key-file=/etc/kubernetes/pki/front-proxy-client.key --requestheader-allowed-names=front-proxy-client --requestheader-client-ca-file=/etc/kubernetes/pki/front-proxy-ca.crt --requestheader-extra-headers-prefix=X-Remote-Extra- --requestheader-group-headers=X-Remote-Group --requestheader-username-headers=X-Remote-User --secure-port=6443 --service-account-issuer=https://kubernetes.default.svc.cluster.local --service-account-key-file=/etc/kubernetes/pki/sa.pub --service-account-signing-key-file=/etc/kubernetes/pki/sa.key --service-cluster-ip-range=10.96.0.0/12 --tls-cert-file=/etc/kubernetes/pki/apiserver.crt --tls-private-key-file=/etc/kubernetes/pki/apiserver.key
+sudo ETCDCTL_API=3 etcdctl ... snapshot save
+```
+
+To use backup etcd we need to spcify the etcd API endpoint including the cacert, cert, and key to be used. The values can be found using 
+```
+ps aux | grep etcd
+```
+/etc/kubernetes/pki/etcd/
 ```
 
 Before backing up, test the api endpoint using the following command:
@@ -87,17 +89,6 @@ sudo etcdctl --endpoints=localhost:2379 --cacert [Location] --cert [server cert]
 Test the backup file
 ```
 sudo etcdutl snapshot status /tmp/etcdbackup.db  --write-out=table
-```
-
-Validate that the pod and service running
-```
-ansible@CTRL01:~$ kubectl get all
-NAME       READY   STATUS    RESTARTS   AGE
-pod/vm01   1/1     Running   0          7m43s
-
-NAME                 TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)           AGE
-service/kubernetes   ClusterIP   10.96.0.1      <none>        443/TCP           10m
-service/vm01         NodePort    10.101.39.23   <none>        32022:30381/TCP   7m23s
 ```
 
 ## Restoring Etcd backup
