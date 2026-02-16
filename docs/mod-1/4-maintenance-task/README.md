@@ -4,7 +4,7 @@ Steps for maintenance work within the cluster. This topic divided into several s
 
 #### Table of Contents
 
-- [metric-servers](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#metric-servers-for-performance-metrics)
+- [Metrics Server for Performance Metrics](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#metric-servers-for-performance-metrics)
 - [Backing up Etcd](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#backing-up-the-etcd)
 - [Restoring Etcd](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#backing-up-the-etcd)
 - [Upgrade Control Node](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#backing-up-the-etcd)
@@ -13,22 +13,14 @@ Steps for maintenance work within the cluster. This topic divided into several s
 - [K8s HA Cluster Configuration](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#k8s-ha-cluster-configuration)
 - [Demo K8s HA Cluster Deployment](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#demo-k8s-ha-cluster-deployment)
 
-## Metric servers for performance metrics
+## Metric Server for Performance Metrics
 
-Not part of vanilla, have to install separately. metrics-server allow us to get k8s performance metrics. Repo can be accessible from here: `https://github.com/kubernetes-sigs/metrics-server` Below is to install the metric server
+Not part of vanilla, have to install separately. metrics-server allow us to get k8s performance metrics. Repo can be accessible from here: [Metrics Server SiGS](https://github.com/kubernetes-sigs/metrics-server) Below is to install the metric server
 ```
 kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 ```
 
-We should see the new pod, but it's not ready
-```
-ansible@CTRL-01:~$ kubectl get pods -n kube-system | grep metrics
-metrics-server-867d48dc9c-r5kn7            0/1     Running   0          14m
-ansible@CTRL-01:~$ kubectl logs -n kube-system metrics-server-867d48dc9c-r5kn7 | tail -n 1
-E1215 09:24:05.336642       1 scraper.go:149] "Failed to scrape node" err="Get \"https://192.168.101.21:10250/metrics/resource\": tls: failed to verify certificate: x509: cannot validate certificate for 192.168.101.21 because it doesn't contain any IP SANs" node="wrk-01"
-```
-
-We need to update the pod so that it allow insecure TLS using `kubectl edit -n kube-system deployments.apps metrics-server` by adding an argument
+Edit the deployment pod parameter so that it will ignore tls. Otherwise, it wont work
 ```
   template:
     metadata:
@@ -45,24 +37,15 @@ We need to update the pod so that it allow insecure TLS using `kubectl edit -n k
         - --kubelet-use-node-status-port
         - --metric-resolution=15s
         image: registry.k8s.io/metrics-server/metrics-server:v0.8.0
+
 ```
 
-Wait until the new pod come up
+Once the pod come up. Then can use the metric server by checking the available commands:
 ```
-ansible@CTRL-01:~$ kubectl get pods -n kube-system | grep metrics
-metrics-server-6b77496796-lh5lp            1/1     Running   0          49s
+kubectl top -h
+kubectl top node
+kubectl top pod
 ```
-
-Now we can use the metric server 
-```
-ansible@CTRL-01:~$ kubectl top node
-NAME      CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
-ctrl-01   203m         5%       758Mi           4%          
-wrk-01    55m          1%       339Mi           2%
-```
-
-Other useful command `kubectl top pod -A`
-
 
 ##  Backing up the Etcd
 
