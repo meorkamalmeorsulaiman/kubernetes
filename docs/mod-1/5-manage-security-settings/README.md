@@ -8,7 +8,7 @@
 - [API Access using default ServiceAccount]()
 - [Setting up Role and RoleBinding]()
 - [Setting up Role and RoleBinding]()
-
+- [Setting up RBAC for Users]()
 
 ## API Access 
 
@@ -87,7 +87,6 @@ Now try to use different api call and it should failed. This due to the default 
 curl -H "Authorization: Bearer $TOKEN" https://kubernetes/api/v1/namespaces/default/pods/ --insecure
 ```
 
-
 ## Setting up Role and RoleBinding
 
 We start by creating Service Account
@@ -135,147 +134,58 @@ Role have a namespace scope while ClusterRole apply to the entire cluster. It wo
 
 ## Setting up RBAC for Users
 
-User account consist of authorized certificate, to create a user account:
-- Create certificate key pair
-- Create CSR
-- Sign the certificate
-- Create a configuration file that uses these keys to access the k8s cluster
-- Create an RBAC Role
-- Create an RBAC RoleBinding
+This section is an optional that provide a step to create user account to authenticate and authorized to the cluster. Several steps define as below:
+1. Create certificate key pair
+2. Create CSR
+3. Sign the certificate
+4. Setup kubectl and add new pki into the cluster
+5. Create an RBAC Role RBAC RoleBinding
 
-This section not covered in CKA
+> **Notes:** This section not covered in CKA
 
-Below steps to create user account:
-1 - Create namespace `kubectl create ns NAME`
+Create a namespace and add new user in linux environment
 ```
-ansible@CTRL-01:~$ kubectl create ns students
-namespace/students created
-ansible@CTRL-01:~$ kubectl create ns staff
-namespace/staff created
-ansible@CTRL-01:~$ kubectl config get-contexts
-CURRENT   NAME                          CLUSTER      AUTHINFO           NAMESPACE
-*         kubernetes-admin@kubernetes   kubernetes   kubernetes-admin
+kubectl create ns staff
+sudo useradd -m -G sudo -s /bin/bash it-administrator
+sudo passwd it-administrator
 ```
 
-2 - Create user account and make sure it setup with key material using linux
+Create Certificate Key Pair and Sign Certificate
 ```
-ansible@CTRL-01:~$ sudo useradd -m -G sudo -s /bin/bash anna
-ansible@CTRL-01:~$ sudo passwd anna
-New password:
-Retype new password:
-passwd: password updated successfully
-```
-
-3 - Create private key
-```
-anna@CTRL-01:~$ openssl genrsa -out anna.key 2048
-anna@CTRL-01:~$ ls -l
-total 4
--rw------- 1 anna anna 1704 Dec 31 10:05 anna.key
+su it-administrator
+cd
+openssl genrsa -out it-administrator.key 2048
+openssl req -new -key it-administrator.key -out it-administrator.csr -subj "/CN=it-administrator/O=k8s"
+sudo openssl x509 -req -in it-administrator.csr -CA /etc/kubernetes/pki/ca.crt 
+sudo openssl x509 -req -in it-administrator.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -CAcreateserial -out it-administrator.crt -days 1800
 ```
 
-4 - Create CSR
+Setup kubectl and add new pki into the cluster using new user account
 ```
-anna@CTRL-01:~$ openssl req -new -key anna.key -out anna.csr -subj "/CN=anna/O=k8s"
-anna@CTRL-01:~$ ls -l
-total 8
--rw-rw-r-- 1 anna anna  903 Dec 31 10:06 anna.csr
--rw------- 1 anna anna 1704 Dec 31 10:05 anna.key
-```
-
-5 - Sign the certificate
-```
-anna@CTRL-01:~$ sudo openssl x509 -req -in anna.csr -CA /etc/kubernetes/pki/ca.crt
-Certificate request self-signature ok
-subject=CN = anna, O = k8s
-Could not read CA private key from /etc/kubernetes/pki/ca.crt
+mkdir ~/.kube
+sudo cp -i /etc/kubernetes/admin.conf .kube/config
+sudo chown -R it-administrator:it-administrator .kube
+kubectl config set-credentials it-administrator --client-certificate=it-administrator.crt --client-key=it-administrator.key 
+kubectl config set-context staff-context --cluster=kubernetes --namespace=staff --user=it-administrator
+kubectl config get-contexts
 ```
 
-6 - Use the Signed CSR to create the PKI certificate
+Create Role and RoleBinding using default control node account
 ```
-anna@CTRL-01:~$ sudo openssl x509 -req -in anna.csr -CA /etc/kubernetes/pki/ca.crt -CAkey /etc/kubernetes/pki/ca.key -CAcreateserial -out anna.crt -days 1800
-Certificate request self-signature ok
-subject=CN = anna, O = k8s
-anna@CTRL-01:~$ ls -l
-total 12
--rw-r--r-- 1 root root 1005 Dec 31 10:10 anna.crt
--rw-rw-r-- 1 anna anna  903 Dec 31 10:06 anna.csr
--rw------- 1 anna anna 1704 Dec 31 10:05 anna.key
+su ansible
+kubectl create role -n staff staff-role --verb=get,list,watch,create,update,patch,delete --resource=deployment,replicasets,pods
+kubectl create rolebinding -n staff staff-binding --user=it-administrator --role=staff-role
 ```
 
-7 - Create config directory for the new user 
+Proceed to test 
 ```
-anna@CTRL-01:~$ mkdir /home/anna/.kube
-anna@CTRL-01:~$ sudo cp -i /etc/kubernetes/admin.conf .kube/config
-anna@CTRL-01:~$ sudo chown -R anna:anna .kube
-```
-
-8 - Update the k8s credentials file for the new user
-```
-anna@CTRL-01:~$ kubectl config set-credentials anna --client-certificate=anna.crt --client-key=anna.key
-User "anna" set.
+su - it-administrator
+kubectl get all
 ```
 
-Set context
+In case of assigning a view-only role, below is the verb settings and bind again with the user
 ```
-anna@CTRL-01:~$ kubectl config set-context ann-context --cluster=kubernetes --namespace=staff --user=anna
-Context "ann-context" created.
-anna@CTRL-01:~$ kubectl config use-context anna-context
-Switched to context "anna-context".
-```
-
-Test the access
-```
-anna@CTRL-01:~$ kubectl get pods
-Error from server (Forbidden): pods is forbidden: User "anna" cannot list resource "pods" in API group "" in the namespace "staff"
-anna@CTRL-01:~$ kubectl config get-contexts
-CURRENT   NAME                          CLUSTER      AUTHINFO           NAMESPACE
-*         anna-context                  kubernetes   anna               staff
-          kubernetes-admin@kubernetes   kubernetes   kubernetes-admin
-```
-
-9 - Setup RBAC
-```
-ansible@CTRL-01:~$ kubectl create role staff -n staff --verb=get,list,watch,create,update,patch,delete --resource=deployment,replicasets,pods
-role.rbac.authorization.k8s.io/staff created
-```
-
-10 - Bind the role
-```
-ansible@CTRL-01:~$ kubectl create rolebinding -n staff staff-role-binding --user=anna --role=staff
-rolebinding.rbac.authorization.k8s.io/staff-role-binding created
-ansible@CTRL-01:~$ su - anna
-```
-
-Test
-```
-anna@CTRL-01:~$ kubectl create deploy nginx --image=nginx
-deployment.apps/nginx created
-anna@CTRL-01:~$ kubectl get pods
-NAME                     READY   STATUS    RESTARTS   AGE
-nginx-66686b6766-6tdzc   1/1     Running   0          14s
-```
-
-Options, assigned anna to role in default namespace with view-only permission
-```
-ansible@CTRL-01:~$ kubectl create role viewers -n default --verb=list,get,watch --resource=deployments,replicasets,pods
-role.rbac.authorization.k8s.io/viewers created
-ansible@CTRL-01:~$ kubectl create rolebinding viewers --user=anna --role=viewers
-rolebinding.rbac.authorization.k8s.io/viewers created
-ansible@CTRL-01:~$ su - anna
-Password:
-anna@CTRL-01:~$ kubectl get all -n default
-NAME                        READY   STATUS    RESTARTS      AGE
-pod/mypod                   1/1     Running   2 (30m ago)   150m
-pod/mysapod                 1/1     Running   2 (13m ago)   134m
-pod/security-context-demo   1/1     Running   3 (24m ago)   3h25m
-Error from server (Forbidden): replicationcontrollers is forbidden: User "anna" cannot list resource "replicationcontrollers" in API group "" in the namespace "default"
-Error from server (Forbidden): services is forbidden: User "anna" cannot list resource "services" in API group "" in the namespace "default"
-Error from server (Forbidden): daemonsets.apps is forbidden: User "anna" cannot list resource "daemonsets" in API group "apps" in the namespace "default"
-Error from server (Forbidden): statefulsets.apps is forbidden: User "anna" cannot list resource "statefulsets" in API group "apps" in the namespace "default"
-Error from server (Forbidden): horizontalpodautoscalers.autoscaling is forbidden: User "anna" cannot list resource "horizontalpodautoscalers" in API group "autoscaling" in the namespace "default"
-Error from server (Forbidden): cronjobs.batch is forbidden: User "anna" cannot list resource "cronjobs" in API group "batch" in the namespace "default"
-Error from server (Forbidden): jobs.batch is forbidden: User "anna" cannot list resource "jobs" in API group "batch" in the namespace "default"
+kubectl create role viewers -n default --verb=list,get,watch --resource=deployments,replicasets,pods
 ```
 
 ## Lab
