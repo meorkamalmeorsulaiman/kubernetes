@@ -4,14 +4,12 @@ Steps for maintenance work within the cluster. This topic divided into several s
 
 #### Table of Contents
 
-- [Metrics Server for Performance Metrics](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#metric-servers-for-performance-metrics)
-- [Backing up Etcd](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#backing-up-the-etcd)
-- [Restoring Etcd](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#backing-up-the-etcd)
-- [Upgrade Control Node](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#backing-up-the-etcd)
+- [Metrics Server for Performance Metrics](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#metric-server-for-performance-metrics)
+- [Backing up the Etcd](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#backing-up-the-etcd)
+- [Restoring Etcd](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#restoring-etcd-backup)
+- [Upgrade Control Node](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#upgrade-control-node)
 - [Upgrade Worker Node](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#upgrade-worker-node)
 - [K8s HA Cluster](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#k8s-ha-cluster)
-- [K8s HA Cluster Configuration](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#k8s-ha-cluster-configuration)
-- [Demo K8s HA Cluster Deployment](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#demo-k8s-ha-cluster-deployment)
 
 ## Metric Server for Performance Metrics
 
