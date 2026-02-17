@@ -88,52 +88,43 @@ curl -H "Authorization: Bearer $TOKEN" https://kubernetes/api/v1/namespaces/defa
 
 ## Setting up Role and RoleBinding
 
-Now we can create new ServiceAccount and role. You can use `kubectl create role -h | less` to see the command options
+We start by creating Service Account
 ```
-ansible@CTRL-01:~/cka$ kubectl create sa mysa
-serviceaccount/mysa created
-ansible@CTRL-01:~/cka$ kubectl create role list-pods --resource=pods --verb=list
-role.rbac.authorization.k8s.io/list-pods created
+kubectl create sa list-pods
 ```
 
-Now we create rolebinding and attach the created role and ServiceAccount
+Then we define the RBAC API Object - role and roleBinding. The roleBinding binds the role and the service account
 ```
-ansible@CTRL-01:~/cka$ kubectl create rolebinding list-pods --role=list-pods --serviceaccount=default:mysa
-rolebinding.rbac.authorization.k8s.io/list-pods created
+kubectl create role list-pods --resource=pods --verb=list
+kubectl create rolebinding list-pods --role=list-pods --serviceaccount=default:list-pods
 ```
 
 Now we create a pod config file as below with our new service account:
 ```
-ansible@CTRL-01:~/cka$ cat mysapod.yaml
+cat <<EOF > pod-sa.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: mysapod
+  name: pod-sa
 spec:
-  serviceAccountName: mysa
+  serviceAccountName: list-pods
   containers:
   - name: alpine
     image: alpine:3.9
     command:
     - "sleep"
     - "3600"
-ansible@CTRL-01:~/cka$ kubectl apply -f mysapod.yaml
-pod/mysapod created
+EOF
+kubectl apply -f pod-sa.yaml
 ```
 
-Then try to use the pod to access the API resources with the 
+We test the API access of listing the pods and should be able to do so
 ```
-ansible@CTRL-01:~/cka$ kubectl exec -it mysapod -- sh
-/ # apk -- update
-/ # apk add curl
-/ # curl -H "Authorization: Bearer $TOKEN" https://kubernetes/api/v1/ --insecure
-<<snipped>>
-```
-
-Use differnet API source to get the list of pods:
-```
-/ # curl -H "Authorization: Bearer $TOKEN" https://kubernetes/api/v1/namespaces/default/pods --insecure
-<<snippet>>
+kubectl exec -it pod-sa -- sh
+apk add --update curl
+TOKEN=$(cat /run/secrets/kubernetes.io/serviceaccount/token)
+curl -H "Authorization: Bearer $TOKEN" https://kubernetes/api/v1/ --insecure
+curl -H "Authorization: Bearer $TOKEN" https://kubernetes/api/v1/namespaces/default/pods --insecure
 ```
 
 ## ClusterRoles and ClusterRoleBindings
