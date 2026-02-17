@@ -1,5 +1,12 @@
 # Managing Security Settings
 
+## Table of Contents
+
+- [Security Context]()
+- [Understanding User and Service Accounts]()
+- [Understanding Role Based Access Control]()
+- [API Access using default ServiceAccount]()
+
 
 ## API Access 
 
@@ -49,97 +56,37 @@ kubectl exec -it security-context-demo -- ls -l /data
 kubectl exec -it security-context-demo -- id
 ```
 
-## Understanding User, ServiceAccount and API Access
+## Understanding User and Service Accounts
 
-Users doesn't created by k8s API for people to authenticate and authorize. They are obtained externally defined by:
-- x.509 certificates
-- OpenID-Based like AD
-
-ServiceAccounts are used to authorized Pods to get access to specific API resources. Each Namespace has a ServiceAccount with the name `default`, this used by Pods to get minimal access to k8s resources. Additional ServiceAccount can be created to addtional access.
+K8s has 2 categories of users which is service accounts and normal users. The normal user is any user that present a valid certificate signed by the Cluster is considered authenticated and RBAC would determine whether the user is authorized to perform specific operation on a resource. On the other hand, the service accounts are users managed by the K8s API. It bound to a specific namespaces, and created automatically by the API server or manually through API calls. Serivce accounts are tied to a set of credentials stored as secrets, which are mounted into pods allowin in-cluster processes to talk to the K8s API. More on this in [K8s Authentication](https://kubernetes.io/docs/reference/access-authn-authz/authentication/)
 
 ## Understanding Role Based Access Control
 
-Role is a collections of verbs (list, create and etc.) Role give access to resource(pods) Role binding connecting user and ServiceAccount (attaches to pod) with the Role. This create a RBAC environment.
+Role is a collections of verbs (list, create and etc.) Role give access to resource(pods) Role binding connecting user and ServiceAccount (attaches to pod) with the Role. This create a RBAC environment. RBAC API declares 4 kinds of K8s object. They are Role, ClusterRole, RoleBinding and ClusterRoleBinding
 
-## Setting up RBAC for ServiceAccount
+## API Access using default ServiceAccount
 
-ServiceAccount is an identify in k8s that use to authenticate to API server or implementing security policies.
-
-We can try by first create a pod and check the ServiceAccount name as below:
+Before starting let's test the API access from a Pod using below command it should failed - 403
 ```
-ansible@CTRL-01:~/cka$ kubectl run mypod --image=alpine -- sleep 3600
-pod/mypod created
-ansible@CTRL-01:~/cka$ kubectl get pods mypod -o yaml
-<<snippet>>
-  serviceAccount: default
-  serviceAccountName: default
-<<snippet>>
+kubectl run mypod --image=alpine -- sleep 3600
+kubectl exec -it mypod -- apk add --update curl
+kubectl exec -it mypod -- curl https://kubernetes/api/v1 --insecure
 ```
 
-Let check what the default ServiceAccount can do:
+Now we set the service account token and use that as part of the http request. It should get some return
 ```
-ansible@CTRL-01:~/cka$ kubectl get sa
-NAME      SECRETS   AGE
-default   0         3h53m
-ansible@CTRL-01:~/cka$ kubectl exec -it mypod -- sh
-/ # apk add --update curl
-( 1/10) Installing brotli-libs (1.2.0-r0)
-( 2/10) Installing c-ares (1.34.6-r0)
-( 3/10) Installing libunistring (1.4.1-r0)
-( 4/10) Installing libidn2 (2.3.8-r0)
-( 5/10) Installing nghttp2-libs (1.68.0-r0)
-( 6/10) Installing nghttp3 (1.13.1-r0)
-( 7/10) Installing libpsl (0.21.5-r3)
-( 8/10) Installing zstd-libs (1.5.7-r2)
-( 9/10) Installing libcurl (8.17.0-r1)
-(10/10) Installing curl (8.17.0-r1)
-Executing busybox-1.37.0-r30.trigger
-OK: 13.2 MiB in 26 packages
+kubectl exec -it mypod -- sh
+TOKEN=$(cat /run/secrets/kubernetes.io/serviceaccount/token)
+curl -H "Authorization: Bearer $TOKEN" https://kubernetes/api/v1 --insecure
 ```
 
-Then curl the k8s API
+Now try to use different api call and it should failed. This due to the default serviceAccount doesn't allow the get the pod details
 ```
-/ # curl https://kubernetes/api/v1 --insecure
-{
-  "kind": "Status",
-  "apiVersion": "v1",
-  "metadata": {},
-  "status": "Failure",
-  "message": "forbidden: User \"system:anonymous\" cannot get path \"/api/v1\"",
-  "reason": "Forbidden",
-  "details": {},
-  "code": 403
+curl -H "Authorization: Bearer $TOKEN" https://kubernetes/api/v1/namespaces/default/pods/ --insecure
 ```
 
-Assign a user to a variable that we can use to access the API
-```
-/ # TOKEN=$(cat /run/secrets/kubernetes.io/serviceaccount/token)
-/ # echo $TOKEN
-eyJhbGciOiJSUzI1NiIsImtpZCI6IlgwYlBqb3ZPckhrWDdsWTY1TTJ1Q2ZIWUNrVXNaUmlIV2Nub1g1TktaN3cifQ.eyJhdWQiOlsiaHR0cHM6Ly9rdWJlcm5ldGVzLmRlZmF1bHQuc3ZjLmNsdXN0ZXIubG9jYWwiXSwiZXhwIjoxNzk4NzA4NTM5LCJpYXQiOjE3NjcxNzI1MzksImlzcyI6Imh0dHBzOi8va3ViZXJuZXRlcy5kZWZhdWx0LnN2Yy5jbHVzdGVyLmxvY2FsIiwianRpIjoiMzc3NzEyZWUtNzA5MC00MzlmLTljYTktMjcwZTI2MjJiYzM5Iiwia3ViZXJuZXRlcy5pbyI6eyJuYW1lc3BhY2UiOiJkZWZhdWx0Iiwibm9kZSI6eyJuYW1lIjoid3JrLTAyIiwidWlkIjoiMjk2MTQ3ZTItZjc5ZC00NzUxLWI2MzYtM2M2MDJkODRkNmIwIn0sInBvZCI6eyJuYW1lIjoibXlwb2QiLCJ1aWQiOiJjYjQzNTFhOC04MWIzLTRiMjctYjI3ZC03NjI2YjNhNDgzNTcifSwic2VydmljZWFjY291bnQiOnsibmFtZSI6ImRlZmF1bHQiLCJ1aWQiOiJlY2FiNzIwZi0xNDZlLTRlOTktYTdhYi1mYjEzYzRhN2M2ZWQifSwid2FybmFmdGVyIjoxNzY3MTc2MTQ2fSwibmJmIjoxNzY3MTcyNTM5LCJzdWIiOiJzeXN0ZW06c2VydmljZWFjY291bnQ6ZGVmYXVsdDpkZWZhdWx0In0.pdZbwWN9CsfMCmIn1H0Pm_lP-ntii_lq21aXGXtt2HwtFSfGUtMLJpW62kdeJ5dfsIzQ4t7WmPKvRvnMXoJ0aXFh7RGnaGpCPSdTCOndcBjgyz2hpCpNwGlB4dQgfpDxFKAnqn04cTKlJ-W_hhLQGsM-ZkVlzCE55fxLVLoawxbAwmL9HegKw0lBgCSMIQ7nvSWgMljNu1On7Ga5DlMesxarZJfot-19ybHcr4wG2ijI4I92kz4Aou_airyH2V56Pba-TX13iwKfXHUMmUV7Q8f3JQPsCsIZYg_IL2M8a7r4mEG24rTw0JQl5F3-ogAYRPB2F5rhQmB6tcYoM2snUw
-```
 
-Use that token to access the k8s API and should be able to get the API resource
-```
-/ # curl -H "Authorization: Bearer $TOKEN" https://kubernetes/api/v1 --insecure
-<<Snippet>>
-```
-
-Access different API resource to see the namespaces, it failed with default ServiceAccount
-```
-/ # curl -H "Authorization: Bearer $TOKEN" https://kubernetes/api/v1/namespaces/default/pods/ --insecure
-{
-  "kind": "Status",
-  "apiVersion": "v1",
-  "metadata": {},
-  "status": "Failure",
-  "message": "pods is forbidden: User \"system:serviceaccount:default:default\" cannot list resource \"pods\" in API group \"\" in the namespace \"default\"",
-  "reason": "Forbidden",
-  "details": {
-    "kind": "pods"
-  },
-  "code": 403
-}/ # exit
-```
+## Setting up Role and RoleBinding
 
 Now we can create new ServiceAccount and role. You can use `kubectl create role -h | less` to see the command options
 ```
