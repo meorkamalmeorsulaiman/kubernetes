@@ -8,7 +8,7 @@
 - [API Access using default ServiceAccount]()
 - [Setting up Role and RoleBinding]()
 - [Setting up Role and RoleBinding]()
-- [Setting up RBAC for Users]()
+- [Setting up User Account for Cluster Access]()
 
 ## API Access 
 
@@ -132,14 +132,14 @@ curl -H "Authorization: Bearer $TOKEN" https://kubernetes/api/v1/namespaces/defa
 
 Role have a namespace scope while ClusterRole apply to the entire cluster. It work similar to what Roles do. To provide access to ClusterRoles, use user or SerivceAccount and attach it with ClusterRoleBinding. By default ClusterRole and ClusterRoleBinding exist and can find it using `kubectl get clusterrole` or `kubectl get clusterrolebinding`
 
-## Setting up RBAC for Users
+## Setting up User Account for Cluster Access
 
 This section is an optional that provide a step to create user account to authenticate and authorized to the cluster. Several steps define as below:
-1. Create certificate key pair
-2. Create CSR
-3. Sign the certificate
-4. Setup kubectl and add new pki into the cluster
-5. Create an RBAC Role RBAC RoleBinding
+1. Create a namespace and add new user in linux environment
+2. Create Certificate Key Pair and Sign Certificate
+3. Setup kubectl and add new pki into the cluster using new user account
+4. Create Role and RoleBinding using default control node account
+5. Test the authentication and authorization
 
 > **Notes:** This section not covered in CKA
 
