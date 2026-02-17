@@ -2,7 +2,7 @@
 
 Steps for maintenance work within the cluster. This topic divided into several sections:
 
-#### Table of Contents
+## Table of Contents
 
 - [Metrics Server for Performance Metrics](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#metric-server-for-performance-metrics)
 - [Backing up the Etcd](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-1/4-maintenance-task#backing-up-the-etcd)
