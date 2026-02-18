@@ -2,7 +2,7 @@
 
 ### Topics
 1. [Deployment](#URL)
-2. [eamonSet](#URL)
+2. [DeamonSet](#URL)
 3. [Using StatefulSets](#URL)
 4. [Individual Pod](#URL)
 5. [Manage Pod initialization](#URL)
@@ -46,7 +46,9 @@ kubectl get pods
 
 ## DeamonSet
 
-A resource that run application in each cluster node. A DaemonSet ensures that all (or some) Nodes run a copy of a Pod. It start necessary agents on all cluster nodes. We can use for user workloads. DaemonSet has to be created from manifest. It content doesn't have much different that Deployment except kind should be DaemonSet and no replicas and strategy. Below is the sample from the same Deployment from previous section that has been converted into DaemonSet and once applied. The Pod will run on all the worker nodes without specifying the replicas
+A DaemonSet ensures that all (or some) Nodes run a copy of a Pod. It start necessary agents on all cluster nodes. We can use for user workloads. DaemonSet has to be created from manifest. It content doesn't have much different that Deployment except kind should be DaemonSet and no replicas and strategy. 
+
+Below is the sample from the same Deployment from previous section that has been converted into DaemonSet and once applied. The Pod will run on all the worker nodes without specifying the replicas
 ```
 cat <<EOF > web-daemon.yaml
 apiVersion: apps/v1
