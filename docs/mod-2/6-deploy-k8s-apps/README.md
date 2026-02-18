@@ -1,8 +1,8 @@
 # Deploying Kubernetes Application
 
 ### Topics
-1. [Using Deployment](#URL)
-2. [Running Agents with DeamonSets](#URL)
+1. [Deployment](#URL)
+2. [eamonSet](#URL)
 3. [Using StatefulSets](#URL)
 4. [Individual Pod](#URL)
 5. [Manage Pod initialization](#URL)
@@ -11,7 +11,7 @@
 8. [Sidecar for logging](#URL)
 
 
-## Deployments
+## Deployment
 
 Standard to run k8s deployment. Deployments responsible to start the pod. Deployments resources use replicaset to scale pod. Deployment offer rolling update feature. The command below create a deployment that
 ```
@@ -44,7 +44,7 @@ kubectl set image deploy web-service nginx=nginx:1.28
 kubectl get pods
 ```
 
-## DeamonSets
+## DeamonSet
 
 A resource that run application in each cluster node. A DaemonSet ensures that all (or some) Nodes run a copy of a Pod. It start necessary agents on all cluster nodes. We can use for user workloads. DaemonSet has to be created from manifest. It content doesn't have much different that Deployment except kind should be DaemonSet and no replicas and strategy. Below is the sample from the same Deployment from previous section that has been converted into DaemonSet and once applied. The Pod will run on all the worker nodes without specifying the replicas
 ```
