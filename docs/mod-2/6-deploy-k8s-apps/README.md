@@ -163,11 +163,12 @@ kubectl describe pod init-app
 `kubectl scale` command use to manually scale `Deployment`, `ReplicaSet` or `StatefulSet` Alternative we have `HorizontalPodAutoscaler`.
 We scale down our previous deployment
 ```
-ansible@CTRL-01:~$ kubectl scale deployment mondeploy --replicas=2
-deployment.apps/mondeploy scaled
-ansible@CTRL-01:~$ kubectl get deploy
-NAME        READY   UP-TO-DATE   AVAILABLE   AGE
-mondeploy   2/2     2            2           67s
+kubectl scale deployment web-service --replicas=2
+```
+
+More about scaling option use command below
+```
+kubectl scale -h | less
 ```
 
 Set the deployment to use autoscaler with min and max replicas. There are may other options available use `kubectl autoscale -h | more` 
