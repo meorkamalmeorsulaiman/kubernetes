@@ -3,10 +3,10 @@
 ### Topics
 1. [Deployment](#URL)
 2. [DeamonSet](#URL)
-3. [Using StatefulSets](#URL)
+3. [StatefulSets](#URL)
 4. [Individual Pod](#URL)
-5. [Manage Pod initialization](#URL)
-6. [Scaling application](#URL)
+5. [Init Continers](#URL)
+6. [Scalling application](#URL)
 7. [Autoscaler](#URL)
 8. [Sidecar for logging](#URL)
 
