@@ -1,6 +1,6 @@
 # Deploying Kubernetes Application
 
-### Topics
+## Table of Contents
 1. [Deployment](#URL)
 2. [DeamonSet](#URL)
 3. [StatefulSets](#URL)
@@ -9,7 +9,6 @@
 6. [Scalling application](#URL)
 7. [Autoscaler](#URL)
 8. [Sidecar for logging](#URL)
-
 
 ## Deployment
 
