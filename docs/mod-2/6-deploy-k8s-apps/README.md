@@ -158,22 +158,6 @@ kubectl apply -f initApp.yaml
 kubectl describe pod init-app
 ```
 
-Apply the config, the main container wont run until the 2 init container ready:
-```
-ansible@CTRL-01:~$ kubectl get pods
-NAME        READY   STATUS     RESTARTS   AGE
-myapp-pod   0/1     Init:1/2   0          45s
-web-0       0/1     Pending    0          11m
-```
-
-Confirmed that the main container runnning
-```
-ansible@CTRL-01:~$ kubectl get pods
-NAME        READY   STATUS    RESTARTS   AGE
-myapp-pod   1/1     Running   0          77s
-web-0       0/1     Pending   0          11m
-```
-
 ## Scalling Apps
 
 `kubectl scale` command use to manually scale `Deployment`, `ReplicaSet` or `StatefulSet` Alternative we have `HorizontalPodAutoscaler`.
