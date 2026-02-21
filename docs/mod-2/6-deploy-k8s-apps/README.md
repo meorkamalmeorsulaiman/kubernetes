@@ -130,29 +130,32 @@ kubectl get all
 ## Running in Individual Pod
 Has a lot of disadvantages when running individual pod, no redundancy and load-balacing and etc. Alway use `Deployments`, `DaemonSets` or `StatefulSets`
 
-## Pod Initialization
+## Init Containers
 
-Using `Init Containers` when you need to do preparation. Use `init containers` when there is a preliminary setup required. Example of `init container` that define Pod with 2 init containers [Init Container Example](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/#init-containers-in-use) and edit as below:
+Init container used before the app containers are started. More details about init container [Init Container](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/#understanding-init-containers) Example below has 2 init containers what will first run and once up the actual container will run. Monitor the pod event and see the container started in sequence
 ```
-ansible@CTRL-01:~$ cat myinit.yml
+cat <<EOF > initApp.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: myapp-pod
+  name: init-app
   labels:
-    app.kubernetes.io/name: MyApp
+    app.kubernetes.io/name: initApp
 spec:
   containers:
-  - name: myapp-container
+  - name: app-container
     image: busybox
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   initContainers:
-  - name: init-myservice
+  - name: init-service
     image: busybox
     command: ['sleep', '20']
-  - name: init-mydb
+  - name: init-db
     image: busybox
     command: ['sleep', '20']
+EOF
+kubectl apply -f initApp.yaml
+kubectl describe pod init-app
 ```
 
 Apply the config, the main container wont run until the 2 init container ready:
