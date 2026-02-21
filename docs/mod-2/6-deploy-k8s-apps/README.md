@@ -166,29 +166,14 @@ We scale down our previous deployment
 kubectl scale deployment web-service --replicas=2
 ```
 
+Set min and max replicas for a deployment
+```
+kubectl autoscale deployment web-service --min=5 --max=10
+```
+
 More about scaling option use command below
 ```
 kubectl scale -h | less
-```
-
-Set the deployment to use autoscaler with min and max replicas. There are may other options available use `kubectl autoscale -h | more` 
-```
-ansible@CTRL-01:~$ kubectl autoscale deployment mondeploy --min=5 --max=10
-ansible@CTRL-01:~$ kubectl get deploy
-NAME        READY   UP-TO-DATE   AVAILABLE   AGE
-mondeploy   2/2     2            2           2m51s
-ansible@CTRL-01:~$ kubectl get hpa
-NAME        REFERENCE              TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
-mondeploy   Deployment/mondeploy   cpu: <unknown>/80%   5         10        5          41s
-ansible@CTRL-01:~$ kubectl get deploy
-NAME        READY   UP-TO-DATE   AVAILABLE   AGE
-mondeploy   5/5     5            5           3m46s
-```
-You can check the update config as below:
-```
-ansible@CTRL-01:~$ kubectl get deploy mondeploy -o yaml | grep replicas
-  replicas: 5
-  replicas: 5
 ```
 
 ## Autoscaler - HorizontalPodAutoscaler (HPA)
