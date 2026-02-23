@@ -8,7 +8,7 @@
 5. [Init Continers](#URL)
 6. [Scalling application](#URL)
 7. [HorizontalPodAutoscaler (HPA)](#URL)
-8. [Sidecar for logging](#URL)
+8. [Sidecar or Multi-container](#URL)
 
 ## Deployment
 
@@ -200,44 +200,21 @@ K8s v1.29 and later, an init container with `restartPolicy` set to `Always` will
 
 ### Setup a sidecar for logging
 
-1. Create a pod that write a log
+1. Create a pod that write a log in `/tmp/myfile`
 2. Create a shared volume with an emptyDir that mounted to the log location
 3. Add Sidecar container that run nginx and mount the share volume on nginx html
 4. Expose the service
 
-### Getting the emptryDir shared volume config
+In order to setup a Pod that has a sidecar for logging, a share volume is needed so that the sidecar container can write the log stored in the shared storage. To display the log content, any container can be use but should have access to the shared volume. For this example, a emptyDir can be use as the shared volume setup - [EmptryDir Example](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir-configuration-example)
 
-Config can be found in [EmptryDir Example](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir-configuration-example) We need this as the base template for the volumeMount configs
-
-### Getting the template for pod that write a log
-
-Below is how we can generate and get the arguments to generate logs
+We generate the sample manifest for a pod that write a log as below
 ```
-ansible@CTRL-01:~$ kubectl run test --image=busybox --dry-run=client -o yaml -- sh "echo hello > /tmp/myfile"
-apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    run: test
-  name: test
-spec:
-  containers:
-  - args:
-    - sh
-    - echo hello > /tmp/myfile
-    image: busybox
-    name: test
-    resources: {}
-  dnsPolicy: ClusterFirst
-  restartPolicy: Always
-status: {}
+kubectl run test --image=busybox --dry-run=client -o yaml -- sh "echo hello > /tmp/myfile"
 ```
 
-### Comple configs
-
-The complete configs as below:
+Using above args section, we can build the complete pod manifest as below
 ```
-ansible@CTRL-01:~$ cat mysidecar.yml
+cat <<EOF > mySideCar.yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -248,28 +225,26 @@ spec:
     name: logging
     volumeMounts:
     - mountPath: /messages
-      name: cache-volume
+      name: shared-volume
     args:
     - sh
     - -c
     - echo hello > /messages/index.html
   - image: nginx
-    name: sidecar
+    name: exporter
     volumeMounts:
     - mountPath: /usr/lib/nginx/html
-      name: cache-volume
+      name: shared-volume
   volumes:
-  - name: cache-volume
+  - name: shared-volume
     emptyDir:
       sizeLimit: 500Mi
+EOF
 ```
 
 We noticed that the logging container mount it directory `/messages` to the shared volume named `cache-volume`. Then it will write into `/messages/index.html` as a log. The sidecar on the other hand mount it default http directory `/usr/lib/nginx/html` to the same shared volume with logging container. This will result in nginx displying the log content in http. Let's run and test container within the `sidecar`  pod.
 ```
-ansible@CTRL-01:~$ kubectl apply -f mysidecar.yml
-pod/sidecar created
-ansible@CTRL-01:~$ kubectl exec -it sidecar -c exporter -- cat /usr/lib/nginx/html/index.html
-hello
+kubectl exec -it sidecar -c exporter -- cat /usr/lib/nginx/html/index.html
 ```
 
 ## Lab Practice
