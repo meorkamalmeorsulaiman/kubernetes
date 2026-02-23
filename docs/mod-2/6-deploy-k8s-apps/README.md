@@ -1,14 +1,14 @@
 # Deploying Kubernetes Application
 
 ## Table of Contents
-1. [Deployment](#URL)
-2. [DeamonSet](#URL)
-3. [StatefulSets](#URL)
-4. [Individual Pod](#URL)
-5. [Init Continers](#URL)
-6. [Scalling application](#URL)
-7. [HorizontalPodAutoscaler (HPA)](#URL)
-8. [Sidecar or Multi-container](#URL)
+1. [Deployment](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/6-deploy-k8s-apps#deployment)
+2. [DeamonSet](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/6-deploy-k8s-apps#deamonset)
+3. [StatefulSets](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/6-deploy-k8s-apps#statefulsets)
+4. [Individual Pod](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/6-deploy-k8s-apps#running-in-individual-pod)
+5. [Init Continers](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/6-deploy-k8s-apps#init-containers)
+6. [Scalling application](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/6-deploy-k8s-apps#scalling-apps)
+7. [HorizontalPodAutoscaler (HPA)](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/6-deploy-k8s-apps#horizontalpodautoscaler-hpa)
+8. [Sidecar or Multi-container](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/6-deploy-k8s-apps#sidecar-or-multi-container)
 
 ## Deployment
 
