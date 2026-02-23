@@ -1,234 +1,160 @@
 # Deploying Kubernetes Application
 
-### Topics
-1. [Using Deployment](#URL)
-2. [Running Agents with DeamonSets](#URL)
-3. [Using StatefulSets](#URL)
+## Table of Contents
+1. [Deployment](#URL)
+2. [DeamonSet](#URL)
+3. [StatefulSets](#URL)
 4. [Individual Pod](#URL)
-5. [Manage Pod initialization](#URL)
-6. [Scaling application](#URL)
-7. [Autoscaler](#URL)
-8. [Sidecar for logging](#URL)
+5. [Init Continers](#URL)
+6. [Scalling application](#URL)
+7. [HorizontalPodAutoscaler (HPA)](#URL)
+8. [Sidecar or Multi-container](#URL)
 
+## Deployment
 
-## Using Deployments
-
-Standard to run k8s deployment. Deployments responsible to start the pod. Deployments resources use replicaset to scale pod. Deployment offer rolling update feature. To deploy use `kubectl create deploy` 
+Standard to run k8s deployment. Deployments responsible to start the pod. Deployments resources use replicaset to scale pod. Deployment offer rolling update feature. The command below create a deployment that
 ```
-ansible@CTRL-01:~$ kubectl create deploy mondeploy --image=nginx:1:17 --replicas=3
-deployment.apps/mondeploy created
-ansible@CTRL-01:~$ kubectl get all --selector app=mondeploy
-NAME                             READY   STATUS             RESTARTS   AGE
-pod/mondeploy-746c94dc94-269gc   0/1     InvalidImageName   0          15s
-pod/mondeploy-746c94dc94-2xntz   0/1     InvalidImageName   0          15s
-pod/mondeploy-746c94dc94-jppzh   0/1     InvalidImageName   0          15s
+kubectl create deploy web-service --image=nginx --replicas=3
+kubectl get all   
+```
 
-NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/mondeploy   0/3     3            0           15s
-
-NAME                                   DESIRED   CURRENT   READY   AGE
-replicaset.apps/mondeploy-746c94dc94   3         3         0       15s
+We can generate a manifest using command below
+```
+kubectl create deploy web-service --image=nginx --replicas=3 --dry-run=client -o yaml > web-service.yaml
+cat web-service.yaml
+kubectl apply -f web-service.yaml
+kubectl get deploy web-service
 ```
 
 You can scale the deployment as below:
 ```
-ansible@CTRL-01:~$ kubectl scale deployment mondeploy --replicas=4
-deployment.apps/mondeploy scaled
-ansible@CTRL-01:~$ kubectl get all --selector app=mondeploy
-NAME                             READY   STATUS             RESTARTS   AGE
-pod/mondeploy-746c94dc94-269gc   0/1     InvalidImageName   0          81s
-pod/mondeploy-746c94dc94-2xntz   0/1     InvalidImageName   0          81s
-pod/mondeploy-746c94dc94-jppzh   0/1     InvalidImageName   0          81s
-pod/mondeploy-746c94dc94-lt44g   0/1     InvalidImageName   0          2s
+kubectl scale deploy web-service --replicas=4
+```
 
-NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/mondeploy   0/4     4            0           81s
-
-NAME                                   DESIRED   CURRENT   READY   AGE
-replicaset.apps/mondeploy-746c94dc94   4         4         0       81s
+Or using the manifest
+```
+kubectl replace -f web-service.yaml
+kubectl scale --replicas=2 -f web-service.yaml 
 ```
 
 Update deployment image - rolling update deployment:
 ```
-ansible@CTRL-01:~$ kubectl set image deploy mondeploy nginx=nginx:latest
-deployment.apps/mondeploy image updated
-ansible@CTRL-01:~$ kubectl get all
-NAME                             READY   STATUS              RESTARTS   AGE
-pod/mondeploy-746c94dc94-269gc   0/1     InvalidImageName    0          2m30s
-pod/mondeploy-746c94dc94-2xntz   0/1     InvalidImageName    0          2m30s
-pod/mondeploy-746c94dc94-jppzh   0/1     InvalidImageName    0          2m30s
-pod/mondeploy-85b887cb9d-8z8n4   0/1     ContainerCreating   0          8s
-pod/mondeploy-85b887cb9d-kjthl   0/1     ContainerCreating   0          8s
-
-NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
-service/kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   69m
-
-NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/mondeploy   0/4     2            0           2m30s
-
-NAME                                   DESIRED   CURRENT   READY   AGE
-replicaset.apps/mondeploy-746c94dc94   3         3         0       2m30s
-replicaset.apps/mondeploy-85b887cb9d   2         2         0       8s
-ansible@CTRL-01:~$ kubectl get all
-NAME                             READY   STATUS    RESTARTS   AGE
-pod/mondeploy-85b887cb9d-8z8n4   1/1     Running   0          48s
-pod/mondeploy-85b887cb9d-kjthl   1/1     Running   0          48s
-pod/mondeploy-85b887cb9d-p6xbf   1/1     Running   0          34s
-pod/mondeploy-85b887cb9d-zjmw5   1/1     Running   0          34s
-
-NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
-service/kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   70m
-
-NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/mondeploy   4/4     4            4           3m10s
-
-NAME                                   DESIRED   CURRENT   READY   AGE
-replicaset.apps/mondeploy-746c94dc94   0         0         0       3m10s
-replicaset.apps/mondeploy-85b887cb9d   4         4         4       48s
+kubectl set image deploy web-service nginx=nginx:1.28
+kubectl get pods
 ```
 
-## DeamonSets
+## DeamonSet
 
-A resource that starts application in each cluster node. It start necessary agents on all cluster nodes. We can use for user workloads. Convert deployment to DaemonSets by creating the config file `kubectl create deploy daemon --image=nginx --dry-run=client -o yaml > daemon.yml` Edit by changing `kind` to `DaemonSet`, remove `replicas` and `strategy`:
+A DaemonSet ensures that all (or some) Nodes run a copy of a Pod. It start necessary agents on all cluster nodes. We can use for user workloads. DaemonSet has to be created from manifest. It content doesn't have much different that Deployment except kind should be DaemonSet and no replicas and strategy. 
+
+Below is the sample from the same Deployment from previous section that has been converted into DaemonSet and once applied. The Pod will run on all the worker nodes without specifying the replicas
 ```
-ansible@CTRL-01:~$ cat daemon.yml
+cat <<EOF > web-daemon.yaml
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   labels:
-    app: daemon
-  name: daemon
+    app: web-daemon
+  name: web-daemon
 spec:
   selector:
     matchLabels:
-      app: daemon
+      app: web-daemon
   template:
     metadata:
       labels:
-        app: daemon
+        app: web-daemon
     spec:
       containers:
       - image: nginx
         name: nginx
         resources: {}
 status: {}
-```
-
-Next apply with `kubectl apply -f daemon.yml`
-```
-ansible@CTRL-01:~$ kubectl apply -f daemon.yml
-daemonset.apps/daemon created
-ansible@CTRL-01:~$ kubectl get all
-NAME                             READY   STATUS    RESTARTS   AGE
-pod/daemon-bz6n6                 1/1     Running   0          4s
-pod/daemon-llfdt                 1/1     Running   0          4s
-pod/daemon-r7z7z                 1/1     Running   0          4s
-pod/mondeploy-85b887cb9d-8z8n4   1/1     Running   0          7m13s
-pod/mondeploy-85b887cb9d-kjthl   1/1     Running   0          7m13s
-pod/mondeploy-85b887cb9d-p6xbf   1/1     Running   0          6m59s
-pod/mondeploy-85b887cb9d-zjmw5   1/1     Running   0          6m59s
-
-NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
-service/kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   76m
-
-NAME                    DESIRED   CURRENT   READY   UP-TO-DATE   AVAILABLE   NODE SELECTOR   AGE
-daemonset.apps/daemon   3         3         3       3            3           <none>          4s
-
-NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/mondeploy   4/4     4            4           9m35s
-
-NAME                                   DESIRED   CURRENT   READY   AGE
-replicaset.apps/mondeploy-746c94dc94   0         0         0       9m35s
-replicaset.apps/mondeploy-85b887cb9d   4         4         4       7m13s
-```
-
- You will notice that the `DaemonSets` runs on all the worker nodes without specifying the replicas
-```
-ansible@CTRL-01:~$ kubectl get pods -o wide
-NAME                         READY   STATUS    RESTARTS   AGE     IP              NODE     NOMINATED NODE   READINESS GATES
-daemon-bz6n6                 1/1     Running   0          88s     172.16.89.197   wrk-01   <none>           <none>
-daemon-llfdt                 1/1     Running   0          88s     172.16.19.67    wrk-02   <none>           <none>
-daemon-r7z7z                 1/1     Running   0          88s     172.16.108.3    wrk-03   <none>           <none>
-mondeploy-85b887cb9d-8z8n4   1/1     Running   0          8m37s   172.16.19.66    wrk-02   <none>           <none>
-mondeploy-85b887cb9d-kjthl   1/1     Running   0          8m37s   172.16.108.2    wrk-03   <none>           <none>
-mondeploy-85b887cb9d-p6xbf   1/1     Running   0          8m23s   172.16.89.195   wrk-01   <none>           <none>
-mondeploy-85b887cb9d-zjmw5   1/1     Running   0          8m23s   172.16.89.196   wrk-01   <none>           <none>
+EOF
+kubectl apply -f web-daemon.yaml
+kubectl get all
+kubectl get daemonset web-daemon 
+kubectl get pods -o wide
 ```
 
 ## StatefulSets
 
-Features that needed by stateful applications. Provide pod ordering and uniqueness. It also maintain sticky identifier for each Pods. You need StatefulSet to use in stateful application instead of deployments. Example of StatefulSet config can be found here: [StatefulSet](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) Based on the config we noticed few settings:
+Features that needed by stateful applications. Provide pod ordering and uniqueness. It also maintain sticky identifier for each Pods. You need StatefulSet to use in stateful application instead of Deployment. Example of StatefulSet config can be found here: [StatefulSet](https://kubernetes.io/docs/tutorials/stateful-application/basic-stateful-set/) Based on the config we noticed few settings:
 1. `Kind` is `StatefulSet`
 2. Headless service with `ClusterIP` set to none
-3. Storage involve with `VolumeClaimTemplates` We can check the storage class using `kubectl get storageclass` If you dont have any storage configured, use this example and deploy your storage [StorageClass Example](https://raw.githubusercontent.com/kubernetes/website/main/content/en/examples/storage/storageclass-low-latency.yaml)
-We can deploy the stateful application by 1st checking the storage:
-```
-ansible@CTRL-01:~$ kubectl get storageclass
-NAME          PROVISIONER                         RECLAIMPOLICY   VOLUMEBINDINGMODE      ALLOWVOLUMEEXPANSION   AGE
-low-latency   csi-driver.example-vendor.example   Retain          WaitForFirstConsumer   true                   2m16s
-```
 
-Update the storage in the config and deploy:
+Below is how to create a StatefulSet
 ```
-ansible@CTRL-01:~$ grep storageClassName statefulset.yml
-      storageClassName: "low-latency"
-ansible@CTRL-01:~$ kubectl apply -f statefulset.yml
-service/nginx created
-statefulset.apps/web created
-ansible@CTRL-01:~$ kubectl get all
-NAME        READY   STATUS    RESTARTS   AGE
-pod/web-0   0/1     Pending   0          3s
-
-NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE
-service/kubernetes   ClusterIP   10.96.0.1    <none>        443/TCP   110m
-service/nginx        ClusterIP   None         <none>        80/TCP    3s
-
-NAME                   READY   AGE
-statefulset.apps/web   0/3     3s
+cat <<EOF > web.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx
+  labels:
+    app: nginx
+spec:
+  ports:
+  - port: 80
+    name: web
+  clusterIP: None
+  selector:
+    app: nginx
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: web
+spec:
+  serviceName: "nginx"
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: registry.k8s.io/nginx-slim:0.21
+        ports:
+        - containerPort: 80
+          name: web
+EOF
+kubectl apply -f web.yaml
+kubectl get all
 ```
 
 ## Running in Individual Pod
 Has a lot of disadvantages when running individual pod, no redundancy and load-balacing and etc. Alway use `Deployments`, `DaemonSets` or `StatefulSets`
 
-## Pod Initialization
+## Init Containers
 
-Using `Init Containers` when you need to do preparation. Use `init containers` when there is a preliminary setup required. Example of `init container` that define Pod with 2 init containers [Init Container Example](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/#init-containers-in-use) and edit as below:
+Init container used before the app containers are started. More details about init container [Init Container](https://kubernetes.io/docs/concepts/workloads/pods/init-containers/#understanding-init-containers) Example below has 2 init containers what will first run and once up the actual container will run. Monitor the pod event and see the container started in sequence
 ```
-ansible@CTRL-01:~$ cat myinit.yml
+cat <<EOF > initApp.yaml
 apiVersion: v1
 kind: Pod
 metadata:
-  name: myapp-pod
+  name: init-app
   labels:
-    app.kubernetes.io/name: MyApp
+    app.kubernetes.io/name: initApp
 spec:
   containers:
-  - name: myapp-container
+  - name: app-container
     image: busybox
     command: ['sh', '-c', 'echo The app is running! && sleep 3600']
   initContainers:
-  - name: init-myservice
+  - name: init-service
     image: busybox
     command: ['sleep', '20']
-  - name: init-mydb
+  - name: init-db
     image: busybox
     command: ['sleep', '20']
-```
-
-Apply the config, the main container wont run until the 2 init container ready:
-```
-ansible@CTRL-01:~$ kubectl get pods
-NAME        READY   STATUS     RESTARTS   AGE
-myapp-pod   0/1     Init:1/2   0          45s
-web-0       0/1     Pending    0          11m
-```
-
-Confirmed that the main container runnning
-```
-ansible@CTRL-01:~$ kubectl get pods
-NAME        READY   STATUS    RESTARTS   AGE
-myapp-pod   1/1     Running   0          77s
-web-0       0/1     Pending   0          11m
+EOF
+kubectl apply -f initApp.yaml
+kubectl describe pod init-app
 ```
 
 ## Scalling Apps
@@ -236,81 +162,30 @@ web-0       0/1     Pending   0          11m
 `kubectl scale` command use to manually scale `Deployment`, `ReplicaSet` or `StatefulSet` Alternative we have `HorizontalPodAutoscaler`.
 We scale down our previous deployment
 ```
-ansible@CTRL-01:~$ kubectl scale deployment mondeploy --replicas=2
-deployment.apps/mondeploy scaled
-ansible@CTRL-01:~$ kubectl get deploy
-NAME        READY   UP-TO-DATE   AVAILABLE   AGE
-mondeploy   2/2     2            2           67s
+kubectl scale deployment web-service --replicas=2
 ```
 
-Set the deployment to use autoscaler with min and max replicas. There are may other options available use `kubectl autoscale -h | more` 
+Set min and max replicas for a deployment
 ```
-ansible@CTRL-01:~$ kubectl autoscale deployment mondeploy --min=5 --max=10
-ansible@CTRL-01:~$ kubectl get deploy
-NAME        READY   UP-TO-DATE   AVAILABLE   AGE
-mondeploy   2/2     2            2           2m51s
-ansible@CTRL-01:~$ kubectl get hpa
-NAME        REFERENCE              TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
-mondeploy   Deployment/mondeploy   cpu: <unknown>/80%   5         10        5          41s
-ansible@CTRL-01:~$ kubectl get deploy
-NAME        READY   UP-TO-DATE   AVAILABLE   AGE
-mondeploy   5/5     5            5           3m46s
-```
-You can check the update config as below:
-```
-ansible@CTRL-01:~$ kubectl get deploy mondeploy -o yaml | grep replicas
-  replicas: 5
-  replicas: 5
+kubectl autoscale deployment web-service --min=5 --max=10
 ```
 
-## Autoscaler - HorizontalPodAutoscaler (HPA)
-
-It is an API resource that manages autocalling. It work based on usage statistics and rely from metrics-server. App will auto scale up or down if the threshold passed. Below configured the HPA:
+More about scaling option use command below
 ```
-ansible@CTRL-01:~$ kubectl top pods
-NAME                         CPU(cores)   MEMORY(bytes)
-mondeploy-d9d6c99f6-ldkkx    0m           4Mi
-mondeploy-d9d6c99f6-m4sz5    0m           4Mi
-mondeploy-d9d6c99f6-pwd7v    0m           4Mi
-mondeploy-d9d6c99f6-qcpsc    0m           4Mi
-mondeploy-d9d6c99f6-tjjt8    0m           4Mi
-myapp-pod                    0m           0Mi
-webstress-7d778f7544-d6pjj   0m           4Mi
-webstress-7d778f7544-zhm4x   0m           4Mi
-ansible@CTRL-01:~$ kubectl autoscale deployment webstress --min=2 --max=4 --cpu=80%
-horizontalpodautoscaler.autoscaling/webstress autoscaled
-ansible@CTRL-01:~$ kubectl get hpa
-NAME        REFERENCE              TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
-mondeploy   Deployment/mondeploy   cpu: <unknown>/80%   5         10        5          91m
-webstress   Deployment/webstress   cpu: <unknown>/80%   2         4         0          5s
-ansible@CTRL-01:~$ kubectl get deploy
-NAME        READY   UP-TO-DATE   AVAILABLE   AGE
-mondeploy   5/5     5            5           95m
-webstress   2/2     2            2           6m46s
+kubectl scale -h | less
 ```
 
-It will autoscale after 5 mins by using k8s controller parameter or HPA setting `stabilizationWindowSeconds` using `kubectl edit hpa [deployment name]` as below
+## HorizontalPodAutoscaler (HPA)
+
+It is an API resource that manages autocalling. It work based on usage statistics and rely from metrics-server. Variety of options available using HPA. Below set min and max with condition of CPU 80% When beyond 80% it will scale up.
 ```
-spec:
-  behavior:
-    scaleDown:
-      policies:
-      - periodSeconds: 15
-        type: Percent
-        value: 100
-      selectPolicy: Max
-      stabilizationWindowSeconds: 30
-    scaleUp:
-      policies:
-      - periodSeconds: 15
-        type: Pods
-        value: 4
-      - periodSeconds: 15
-        type: Percent
-        value: 100
-      selectPolicy: Max
-      stabilizationWindowSeconds: 0
+kubectl autoscale deployment web-service --min=2 --max=3 --cpu=80%
 ```
+
+It will autoscale after 5 mins by using k8s controller parameter or HPA setting stabilizationWindowSeconds 
+```
+kubectl edit hpa web-service
+``` 
 
 If you want to set cluster wide, edit `/etc/kubernetes/manifests/kube-controller-manager.yaml` with `- --horizontal-pod-autoscaler-downscale-delay=30s` The staic pod will automatically updated.
 
@@ -325,44 +200,21 @@ K8s v1.29 and later, an init container with `restartPolicy` set to `Always` will
 
 ### Setup a sidecar for logging
 
-1. Create a pod that write a log
+1. Create a pod that write a log in `/tmp/myfile`
 2. Create a shared volume with an emptyDir that mounted to the log location
 3. Add Sidecar container that run nginx and mount the share volume on nginx html
 4. Expose the service
 
-### Getting the emptryDir shared volume config
+In order to setup a Pod that has a sidecar for logging, a share volume is needed so that the sidecar container can write the log stored in the shared storage. To display the log content, any container can be use but should have access to the shared volume. For this example, a emptyDir can be use as the shared volume setup - [EmptryDir Example](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir-configuration-example)
 
-Config can be found in [EmptryDir Example](https://kubernetes.io/docs/concepts/storage/volumes/#emptydir-configuration-example) We need this as the base template for the volumeMount configs
-
-### Getting the template for pod that write a log
-
-Below is how we can generate and get the arguments to generate logs
+We generate the sample manifest for a pod that write a log as below
 ```
-ansible@CTRL-01:~$ kubectl run test --image=busybox --dry-run=client -o yaml -- sh "echo hello > /tmp/myfile"
-apiVersion: v1
-kind: Pod
-metadata:
-  labels:
-    run: test
-  name: test
-spec:
-  containers:
-  - args:
-    - sh
-    - echo hello > /tmp/myfile
-    image: busybox
-    name: test
-    resources: {}
-  dnsPolicy: ClusterFirst
-  restartPolicy: Always
-status: {}
+kubectl run test --image=busybox --dry-run=client -o yaml -- sh "echo hello > /tmp/myfile"
 ```
 
-### Comple configs
-
-The complete configs as below:
+Using above args section, we can build the complete pod manifest as below
 ```
-ansible@CTRL-01:~$ cat mysidecar.yml
+cat <<EOF > mySideCar.yaml
 apiVersion: v1
 kind: Pod
 metadata:
@@ -373,28 +225,26 @@ spec:
     name: logging
     volumeMounts:
     - mountPath: /messages
-      name: cache-volume
+      name: shared-volume
     args:
     - sh
     - -c
     - echo hello > /messages/index.html
   - image: nginx
-    name: sidecar
+    name: exporter
     volumeMounts:
     - mountPath: /usr/lib/nginx/html
-      name: cache-volume
+      name: shared-volume
   volumes:
-  - name: cache-volume
+  - name: shared-volume
     emptyDir:
       sizeLimit: 500Mi
+EOF
 ```
 
 We noticed that the logging container mount it directory `/messages` to the shared volume named `cache-volume`. Then it will write into `/messages/index.html` as a log. The sidecar on the other hand mount it default http directory `/usr/lib/nginx/html` to the same shared volume with logging container. This will result in nginx displying the log content in http. Let's run and test container within the `sidecar`  pod.
 ```
-ansible@CTRL-01:~$ kubectl apply -f mysidecar.yml
-pod/sidecar created
-ansible@CTRL-01:~$ kubectl exec -it sidecar -c exporter -- cat /usr/lib/nginx/html/index.html
-hello
+kubectl exec -it sidecar -c exporter -- cat /usr/lib/nginx/html/index.html
 ```
 
 ## Lab Practice
