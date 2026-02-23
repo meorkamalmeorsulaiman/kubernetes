@@ -7,7 +7,7 @@
 4. [Individual Pod](#URL)
 5. [Init Continers](#URL)
 6. [Scalling application](#URL)
-7. [Autoscaler](#URL)
+7. [HorizontalPodAutoscaler (HPA)](#URL)
 8. [Sidecar for logging](#URL)
 
 ## Deployment
@@ -175,54 +175,17 @@ More about scaling option use command below
 kubectl scale -h | less
 ```
 
-## Autoscaler - HorizontalPodAutoscaler (HPA)
+## HorizontalPodAutoscaler (HPA)
 
-It is an API resource that manages autocalling. It work based on usage statistics and rely from metrics-server. App will auto scale up or down if the threshold passed. Below configured the HPA:
+It is an API resource that manages autocalling. It work based on usage statistics and rely from metrics-server. Variety of options available using HPA. Below set min and max with condition of CPU 80% When beyond 80% it will scale up.
 ```
-ansible@CTRL-01:~$ kubectl top pods
-NAME                         CPU(cores)   MEMORY(bytes)
-mondeploy-d9d6c99f6-ldkkx    0m           4Mi
-mondeploy-d9d6c99f6-m4sz5    0m           4Mi
-mondeploy-d9d6c99f6-pwd7v    0m           4Mi
-mondeploy-d9d6c99f6-qcpsc    0m           4Mi
-mondeploy-d9d6c99f6-tjjt8    0m           4Mi
-myapp-pod                    0m           0Mi
-webstress-7d778f7544-d6pjj   0m           4Mi
-webstress-7d778f7544-zhm4x   0m           4Mi
-ansible@CTRL-01:~$ kubectl autoscale deployment webstress --min=2 --max=4 --cpu=80%
-horizontalpodautoscaler.autoscaling/webstress autoscaled
-ansible@CTRL-01:~$ kubectl get hpa
-NAME        REFERENCE              TARGETS              MINPODS   MAXPODS   REPLICAS   AGE
-mondeploy   Deployment/mondeploy   cpu: <unknown>/80%   5         10        5          91m
-webstress   Deployment/webstress   cpu: <unknown>/80%   2         4         0          5s
-ansible@CTRL-01:~$ kubectl get deploy
-NAME        READY   UP-TO-DATE   AVAILABLE   AGE
-mondeploy   5/5     5            5           95m
-webstress   2/2     2            2           6m46s
+kubectl autoscale deployment web-service --min=2 --max=3 --cpu=80%
 ```
 
-It will autoscale after 5 mins by using k8s controller parameter or HPA setting `stabilizationWindowSeconds` using `kubectl edit hpa [deployment name]` as below
+It will autoscale after 5 mins by using k8s controller parameter or HPA setting stabilizationWindowSeconds 
 ```
-spec:
-  behavior:
-    scaleDown:
-      policies:
-      - periodSeconds: 15
-        type: Percent
-        value: 100
-      selectPolicy: Max
-      stabilizationWindowSeconds: 30
-    scaleUp:
-      policies:
-      - periodSeconds: 15
-        type: Pods
-        value: 4
-      - periodSeconds: 15
-        type: Percent
-        value: 100
-      selectPolicy: Max
-      stabilizationWindowSeconds: 0
-```
+kubectl edit hpa web-service
+``` 
 
 If you want to set cluster wide, edit `/etc/kubernetes/manifests/kube-controller-manager.yaml` with `- --horizontal-pod-autoscaler-downscale-delay=30s` The staic pod will automatically updated.
 
