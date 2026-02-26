@@ -11,9 +11,8 @@
    - [Manage Installed Chart]()
 3. [Generate a Manifest File from Helm Chart]()
    - [Generating the with custom value]()
-4. [Manage Apps with Helm]()
-5. [Kustomize]()
-6. [Lab Practice]()
+4. [Kustomize]()
+5. [Lab Practice]()
 
 ## Run Apps from YAML File
 
