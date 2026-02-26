@@ -1,14 +1,16 @@
 # Using Templating Tools
 
+## Table on Content
+
 1. [Running Apps Using YAML Files]()
 2. [Helm Package Manager]()
-  - [Installing Helm]()
-  - [Adding Bitnami Helm Chart Repository]()
-  - [Finding Chart]()
-  - [Install and Delete Chart]()
-  - [Manage Installed Chart]()
+   - [Installing Helm]()
+   - [Adding Bitnami Helm Chart Repository]()
+   - [Finding Chart]()
+   - [Install and Delete Chart]()
+   - [Manage Installed Chart]()
 3. [Generate a Manifest File from Helm Chart]()
-  - [Generating the with custom value]()
+   - [Generating the with custom value]()
 4. [Manage Apps with Helm]()
 5. [Kustomize]()
 6. [Lab Practice]()
