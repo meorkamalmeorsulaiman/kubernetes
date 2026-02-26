@@ -1,11 +1,16 @@
 # Using Templating Tools
 
 1. [Running Apps Using YAML Files]()
-2.  [Helm Package Manager]()
-3.  [Create Template from Helm Chart]()
-4.  [Manage Apps with Helm]()
-5.  [Kustomize]()
-6.  [Lab Practice]()
+2. [Helm Package Manager]()
+    - [Installing Helm]()
+    - [Adding Bitnami Helm Chart Repository]()
+    - [Finding Chart]()
+    - [Install and Delete Chart]()
+    - [Manage Installed Chart]()
+3. [Create Template from Helm Chart]()
+4. [Manage Apps with Helm]()
+5. [Kustomize]()
+6. [Lab Practice]()
 
 ## Run Apps from YAML File
 
@@ -15,107 +20,85 @@ K8s apps often is a collection of resources. Using YAML file, consistency can be
 
 Helm is K8s package manager, use to streamline installing and managing K8s applications. Helm consist of `helm` tool that need to be installed and a chart. Helm chart is a package that contains:
 - Description of a package
-- One or more templates containing K8s manifest file
+- One or more templates containing K8s manifest or resource file
 
 ### Installing Helm
 
 Charts can be sotred locally or accessed remotely. Below is how to install helm binary by first download the binary. Prior to that confirm your architecture
 ```
-controlplane:~$ arch
-x86_64
+arch
 ```
 
-Binary can be obtained from helm github `https://github.com/helm/helm/releases`. Once downloaded, extract the binary files and move it:
+Binary can be obtained from helm github [Helm Releases](https://github.com/helm/helm/releases). Once downloaded, extract the binary files and move it:
 ```
-controlplane:~/linux-amd64$ ./helm version
-version.BuildInfo{Version:"v4.0.4", GitCommit:"8650e1dad9e6ae38b41f60b712af9218a0d8cc11", GitTreeState:"clean", GoVersion:"go1.25.5", KubeClientVersion:"v1.34"}
-controlplane:~/linux-amd64$ sudo mv helm  /usr/local/bin/
-controlplane:~/linux-amd64$ cd
-controlplane:~$ helm version
-version.BuildInfo{Version:"v4.0.4", GitCommit:"8650e1dad9e6ae38b41f60b712af9218a0d8cc11", GitTreeState:"clean", GoVersion:"go1.25.5", KubeClientVersion:"v1.34"}
-```
-
-### Using Helm
-
-Below are the steps for using Helm
-
-#### Adding repository
-
-```
-controlplane:~$ helm repo add bitnami https://charts.bitnami.com/bitnami
-"bitnami" has been added to your repositories
-controlplane:~$ helm repo list
-NAME                    URL                                                
-kubernetes-dashboard    https://kubernetes.github.io/dashboard/            
-metrics-server          https://kubernetes-sigs.github.io/metrics-server/  
-kubelet-csr-approver    https://postfinance.github.io/kubelet-csr-approver/
-rimusz                  https://charts.rimusz.net                          
-bitnami                 https://charts.bitnami.com/bitnami 
+wget https://get.helm.sh/helm-v4.1.1-linux-amd64.tar.gz
+tar -zxf helm-v4.1.1-linux-amd64.tar.gz 
+./linux-amd64/helm version
+sudo mv linux-amd64/helm /usr/local/bin/
+helm version
 ```
 
-#### Finding Chart
+### Adding Bitnami Helm Chart Repository
 
-Use below command to search thru the repo
+Below is example to add Bitnami Helm Chart
 ```
-helm search repo bitnami
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo list
 ```
 
-Search exact package
+### Finding Chart
+
+
+Search exact chart within repo. This will display all the package available in any repo
 ```
 helm search repo nginx 
 ```
 
-Search exact package with it available version
+Search exact chart with it available version
 ```
 helm search repo nginx --versions
 ```
 
-#### Installing Chart
+### Install and Delete Chart
 
-Update the repo
+Installing Chart mean we are installing the resources into the cluster. We start with updating the repo
 ```
 helm repo update
 ```
 
-Installing chart
+Installing Grafana chart from Bitnami
 ```
-helm install [name]/[chart]
-```
-
-Installing bitname mysql
-```
-helm install bitnami/mysql --generate-name
-```
-
-#### Manage the installed app
-
-```
+helm install bitnami/grafana
+helm list
 kubectl get all
 ```
 
+Delete chart
+```
+helm list
+helm uninstall grafana-1772094697
+```
+
+### Manage Installed Chart
+
 Get details about chart
 ```
-helm show chart bitnami/mysql
+helm show chart bitnami/grafana
 ```
 
 Show all command related to the chart
 ```
-helm show all bitnami/mysql
+helm show all bitnami/grafana
 ```
 
 Get the chart details
 ```
-helm get all mysql-1767946255
+helm get all grafana-1772094697
 ```
 
 How currently installed applications
 ```
 helm list
-```
-
-Get the status using `kubectl`
-```
-kubectl describe pods mysql-1767946255-0
 ```
 
 ## Generate a Template from Helm Chart
