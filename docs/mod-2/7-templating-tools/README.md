@@ -7,7 +7,7 @@
     - [Finding Chart]()
     - [Install and Delete Chart]()
     - [Manage Installed Chart]()
-3. [Create Template from Helm Chart]()
+3. [Generate a Manifest File from Helm Chart]()
 4. [Manage Apps with Helm]()
 5. [Kustomize]()
 6. [Lab Practice]()
@@ -101,49 +101,32 @@ How currently installed applications
 helm list
 ```
 
-## Generate a Template from Helm Chart
+## Generate a Manifest File from Helm Chart
 
-Using helm command to generate the template, you can then apply the template using `kubectl apply -f template.yaml` 
-
-### Installing argo-cd using helm template
-
-#### Setting up helm for argo-cd
-
-Adding repo
+Using helm command to generate the template, you can then apply the template using `kubectl apply -f template.yaml` We try to generate a template for Argo CD First we add the Argo CD repo
 ```
 helm repo add argo https://argoproj.github.io/argo-helm
-```
-
-Repo update
-```
 helm repo update
+helm search repo argo/argo-cd
 ```
 
-Search chart
+Now, let's generate the template. 
 ```
-helm repo argo/argo-cd
-```
-
-#### Generate the template
-
-Command format
-```
-helm template [application name] [repo name]/[chart name] --version [version] > template.yaml
+helm template my-argo-cd argo/argo-cd > argo-cd-template.yaml
+cat argo-cd-template.yaml
 ```
 
-Generate actual template
+Or for a specific version
 ```
 helm template my-argo-cd argo/argo-cd --version 9.2.4 > argo-cd-template.yaml
+cat argo-cd-template.yaml
 ```
 
-#### Generating the template with custom value
+Since this Chart required mandatory values to be set. Proceed to the next section for setting up the custom value
 
-Command format for getting the chart values
-```
-helm show values [repo name]/[chart name] > template-value.yaml
-```
+### Generating the with custom value
 
-Generate actual value template
+Generate actual value template for the Chart
 ```
 helm show values  argo/argo-cd > values.yaml
 ```
@@ -166,21 +149,11 @@ Then edit the required mandatory value - service config, clusterIP
     servicePortHttp: 80
 ```
 
-Generate the template with custom value
+Regenerate the manifest and deploy the chart
 ```
-helm template my-argocd argo/argo-cd -f values.yaml > argo-cd-template.yaml
-```
-
-#### Deploy the app using kubectl
-
-```
+helm template my-argo-cd argo/argo-cd -f values.yaml > argo-cd-template.yaml
 kubectl apply -f argo-cd-template.yaml 
-```
-
-#### Remove app
-
-```
-kubectl delete -f argo-cd-template.yaml 
+kubectl get all
 ```
 
 ## Kustomize
