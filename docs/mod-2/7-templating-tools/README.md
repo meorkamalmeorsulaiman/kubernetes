@@ -1,11 +1,18 @@
 # Using Templating Tools
 
+## Table on Content
+
 1. [Running Apps Using YAML Files]()
-2.  [Helm Package Manager]()
-3.  [Create Template from Helm Chart]()
-4.  [Manage Apps with Helm]()
-5.  [Kustomize]()
-6.  [Lab Practice]()
+2. [Helm Package Manager]()
+   - [Installing Helm]()
+   - [Adding Bitnami Helm Chart Repository]()
+   - [Finding Chart]()
+   - [Install and Delete Chart]()
+   - [Manage Installed Chart]()
+3. [Generate a Manifest File from Helm Chart]()
+   - [Generating the with custom value]()
+4. [Kustomize]()
+5. [Lab Practice]()
 
 ## Run Apps from YAML File
 
@@ -15,97 +22,80 @@ K8s apps often is a collection of resources. Using YAML file, consistency can be
 
 Helm is K8s package manager, use to streamline installing and managing K8s applications. Helm consist of `helm` tool that need to be installed and a chart. Helm chart is a package that contains:
 - Description of a package
-- One or more templates containing K8s manifest file
+- One or more templates containing K8s manifest or resource file
 
 ### Installing Helm
 
 Charts can be sotred locally or accessed remotely. Below is how to install helm binary by first download the binary. Prior to that confirm your architecture
 ```
-controlplane:~$ arch
-x86_64
+arch
 ```
 
-Binary can be obtained from helm github `https://github.com/helm/helm/releases`. Once downloaded, extract the binary files and move it:
+Binary can be obtained from helm github [Helm Releases](https://github.com/helm/helm/releases). Once downloaded, extract the binary files and move it:
 ```
-controlplane:~/linux-amd64$ ./helm version
-version.BuildInfo{Version:"v4.0.4", GitCommit:"8650e1dad9e6ae38b41f60b712af9218a0d8cc11", GitTreeState:"clean", GoVersion:"go1.25.5", KubeClientVersion:"v1.34"}
-controlplane:~/linux-amd64$ sudo mv helm  /usr/local/bin/
-controlplane:~/linux-amd64$ cd
-controlplane:~$ helm version
-version.BuildInfo{Version:"v4.0.4", GitCommit:"8650e1dad9e6ae38b41f60b712af9218a0d8cc11", GitTreeState:"clean", GoVersion:"go1.25.5", KubeClientVersion:"v1.34"}
-```
-
-### Using Helm
-
-Below are the steps for using Helm
-
-#### Adding repository
-
-```
-controlplane:~$ helm repo add bitnami https://charts.bitnami.com/bitnami
-"bitnami" has been added to your repositories
-controlplane:~$ helm repo list
-NAME                    URL                                                
-kubernetes-dashboard    https://kubernetes.github.io/dashboard/            
-metrics-server          https://kubernetes-sigs.github.io/metrics-server/  
-kubelet-csr-approver    https://postfinance.github.io/kubelet-csr-approver/
-rimusz                  https://charts.rimusz.net                          
-bitnami                 https://charts.bitnami.com/bitnami 
+wget https://get.helm.sh/helm-v4.1.1-linux-amd64.tar.gz
+tar -zxf helm-v4.1.1-linux-amd64.tar.gz 
+./linux-amd64/helm version
+sudo mv linux-amd64/helm /usr/local/bin/
+helm version
 ```
 
-#### Finding Chart
+### Adding Bitnami Helm Chart Repository
 
-Use below command to search thru the repo
+Below is example to add Bitnami Helm Chart
 ```
-helm search repo bitnami
+helm repo add bitnami https://charts.bitnami.com/bitnami
+helm repo list
 ```
 
-Search exact package
+### Finding Chart
+
+
+Search exact chart within repo. This will display all the package available in any repo
 ```
 helm search repo nginx 
 ```
 
-Search exact package with it available version
+Search exact chart with it available version
 ```
 helm search repo nginx --versions
 ```
 
-#### Installing Chart
+### Install and Delete Chart
 
-Update the repo
+Installing Chart mean we are installing the resources into the cluster. We start with updating the repo
 ```
 helm repo update
 ```
 
-Installing chart
+Installing Grafana chart from Bitnami
 ```
-helm install [name]/[chart]
-```
-
-Installing bitname mysql
-```
-helm install bitnami/mysql --generate-name
-```
-
-#### Manage the installed app
-
-```
+helm install bitnami/grafana
+helm list
 kubectl get all
 ```
 
+Delete chart
+```
+helm list
+helm uninstall grafana-1772094697
+```
+
+### Manage Installed Chart
+
 Get details about chart
 ```
-helm show chart bitnami/mysql
+helm show chart bitnami/grafana
 ```
 
 Show all command related to the chart
 ```
-helm show all bitnami/mysql
+helm show all bitnami/grafana
 ```
 
 Get the chart details
 ```
-helm get all mysql-1767946255
+helm get all grafana-1772094697
 ```
 
 How currently installed applications
@@ -113,54 +103,32 @@ How currently installed applications
 helm list
 ```
 
-Get the status using `kubectl`
-```
-kubectl describe pods mysql-1767946255-0
-```
+## Generate a Manifest File from Helm Chart
 
-## Generate a Template from Helm Chart
-
-Using helm command to generate the template, you can then apply the template using `kubectl apply -f template.yaml` 
-
-### Installing argo-cd using helm template
-
-#### Setting up helm for argo-cd
-
-Adding repo
+Using helm command to generate the template, you can then apply the template using `kubectl apply -f template.yaml` We try to generate a template for Argo CD First we add the Argo CD repo
 ```
 helm repo add argo https://argoproj.github.io/argo-helm
-```
-
-Repo update
-```
 helm repo update
+helm search repo argo/argo-cd
 ```
 
-Search chart
+Now, let's generate the template. 
 ```
-helm repo argo/argo-cd
-```
-
-#### Generate the template
-
-Command format
-```
-helm template [application name] [repo name]/[chart name] --version [version] > template.yaml
+helm template my-argo-cd argo/argo-cd > argo-cd-template.yaml
+cat argo-cd-template.yaml
 ```
 
-Generate actual template
+Or for a specific version
 ```
 helm template my-argo-cd argo/argo-cd --version 9.2.4 > argo-cd-template.yaml
+cat argo-cd-template.yaml
 ```
 
-#### Generating the template with custom value
+Since this Chart required mandatory values to be set. Proceed to the next section for setting up the custom value
 
-Command format for getting the chart values
-```
-helm show values [repo name]/[chart name] > template-value.yaml
-```
+### Generating the with custom value
 
-Generate actual value template
+Generate actual value template for the Chart
 ```
 helm show values  argo/argo-cd > values.yaml
 ```
@@ -183,64 +151,108 @@ Then edit the required mandatory value - service config, clusterIP
     servicePortHttp: 80
 ```
 
-Generate the template with custom value
+Regenerate the manifest and deploy the chart
 ```
-helm template my-argocd argo/argo-cd -f values.yaml > argo-cd-template.yaml
-```
-
-#### Deploy the app using kubectl
-
-```
+helm template my-argo-cd argo/argo-cd -f values.yaml > argo-cd-template.yaml
 kubectl apply -f argo-cd-template.yaml 
-```
-
-#### Remove app
-
-```
-kubectl delete -f argo-cd-template.yaml 
+kubectl get all
 ```
 
 ## Kustomize
 
-kustomize use to apply changes to a set of resources. Filename should be `kustomization.yaml` and can be apply by using `kubectl apply -f kustomization.yaml` To use kustomize, we have to define the resource in the template as below:
+Kustomize is a tool for customizing Kubernetes configurations. It has the following features to manage application configuration files:
+- generating resources from other sources
+- setting cross-cutting fields for resources
+- composing and customizing collections of resources
+
+
+Example below is a Based and Overlays concept. Where we have the based resource in a directory. Then we can have other version derive from that base rosource using kustomize. Let's start by creating the base resource that includes deployment and service
 ```
+mkdir base
+# Create a base/deployment.yaml
+cat <<EOF > base/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  selector:
+    matchLabels:
+      run: my-nginx
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - name: my-nginx
+        image: nginx
+EOF
+
+# Create a base/service.yaml file
+cat <<EOF > base/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx
+  labels:
+    run: my-nginx
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+  selector:
+    run: my-nginx
+EOF
+# Create a base/kustomization.yaml
+cat <<EOF > base/kustomization.yaml
 resources:
-  - deployment.yaml
-  - service.yaml
-namePrefix: test-
-commonLabels:
-  environment: testing
+- deployment.yaml
+- service.yaml
+EOF
 ```
 
-The `deployment.yaml` and `service.yaml` will define all other values. Now we apply the kustomize `-k` summarize and apply both deployment and service that stated in the kustomize file
+Once applied the deployment should be created
 ```
-kubectl apply -k .
-```
-
-We can see the pod started
-```
-NAME                                      READY   STATUS    RESTARTS   AGE
-pod/test-nginx-friday20-dd867b57c-5cr24   1/1     Running   0          29s
-pod/test-nginx-friday20-dd867b57c-m6wc2   1/1     Running   0          29s
-pod/test-nginx-friday20-dd867b57c-xhcs6   1/1     Running   0          29s
-
-NAME                          TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
-service/kubernetes            ClusterIP   10.96.0.1        <none>        443/TCP   11m
-service/test-nginx-friday20   ClusterIP   10.107.237.240   <none>        80/TCP    29s
-
-NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/test-nginx-friday20   3/3     3            3           29s
-
-NAME                                            DESIRED   CURRENT   READY   AGE
-replicaset.apps/test-nginx-friday20-dd867b57c   3         3         3       29s
+kubectl apply -k base/
+kubectl get all
 ```
 
-We validate the label, should matched what stated in the kustomize
+We should see the deployment and service created. Now, we create the overlay where we want to derive a new deployment called dev. An overlay directory only consist kustomize file that refers to other kustomization. In this case it should refer to the based kustomize. Let's create the overlay directory
 ```
-controlplane:~/cka/kustomize-demo$ kubectl get deploy --show-labels
-NAME                  READY   UP-TO-DATE   AVAILABLE   AGE     LABELS
-test-nginx-friday20   3/3     3            3           3m11s   environment=testing,k8s-app=nginx-friday20
+mkdir dev
+cat <<EOF > dev/kustomization.yaml
+resources:
+- ../base
+namePrefix: dev-
+EOF
 ```
+
+Let's apply and see the deployement and service
+```
+kubectl apply -k dev/
+kubectl get all
+```
+
+In the overlay kustomize we specify the prefix name. We can modify other values too. Refer to [Kustomize Feature List](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#kustomize-feature-list) Below example how to add label with adding the label to pod
+```
+kubectl delete -k dev/
+cat <<EOF > dev/kustomization.yaml
+resources:
+- ../base
+namePrefix: dev-
+labels:
+ - pairs:
+    env: dev
+   includeSelectors: false
+EOF
+kubectl get pod --show-labels
+kubectl get deploy --show-labels
+```
+
+Set the selector to true will add label to the pod. This example shows that we can customize the overlay and set variety of variable without modifying the base resource.
+
 
 ## Lab Practice
 
