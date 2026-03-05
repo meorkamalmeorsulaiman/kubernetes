@@ -2,17 +2,17 @@
 
 ## Table on Content
 
-1. [Running Apps Using YAML Files]()
-2. [Helm Package Manager]()
-   - [Installing Helm]()
-   - [Adding Bitnami Helm Chart Repository]()
-   - [Finding Chart]()
-   - [Install and Delete Chart]()
-   - [Manage Installed Chart]()
-3. [Generate a Manifest File from Helm Chart]()
-   - [Generating the with custom value]()
-4. [Kustomize]()
-5. [Lab Practice]()
+1. [Running Apps Using YAML Files](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/7-templating-tools#run-apps-from-yaml-file)
+2. [Helm Package Manager](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/7-templating-tools#helm-package-manager)
+   - [Installing Helm](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/7-templating-tools#installing-helm)
+   - [Adding Bitnami Helm Chart Repository](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/7-templating-tools#adding-bitnami-helm-chart-repository)
+   - [Finding Chart](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/7-templating-tools#finding-chart)
+   - [Install and Delete Chart](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/7-templating-tools#install-and-delete-chart)
+   - [Manage Installed Chart](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/7-templating-tools#manage-installed-chart)
+3. [Generate a Manifest File from Helm Chart](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/7-templating-tools#generate-a-manifest-file-from-helm-chart)
+   - [Generating the with custom value](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/7-templating-tools#generating-the-with-custom-value)
+4. [Kustomize](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/7-templating-tools#kustomize)
+5. [Lab Practice](https://github.com/meorkamalmeorsulaiman/kubernetes/tree/main/docs/mod-2/7-templating-tools#lab-practice)
 
 ## Run Apps from YAML File
 
