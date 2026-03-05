@@ -251,7 +251,7 @@ kubectl get pod --show-labels
 kubectl get deploy --show-labels
 ```
 
-Set the selector to true and the
+Set the selector to true will add label to the pod. This example shows that we can customize the overlay and set variety of variable without modifying the base resource.
 
 
 ## Lab Practice
