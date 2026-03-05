@@ -235,7 +235,23 @@ kubectl apply -k dev/
 kubectl get all
 ```
 
-In the overlay kustomize we specify the prefix name. We can modify other values too. Refer to [Kustomize Feature List](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#kustomize-feature-list)
+In the overlay kustomize we specify the prefix name. We can modify other values too. Refer to [Kustomize Feature List](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#kustomize-feature-list) Below example how to add label with adding the label to pod
+```
+kubectl delete -k dev/
+cat <<EOF > dev/kustomization.yaml
+resources:
+- ../base
+namePrefix: dev-
+labels:
+ - pairs:
+    env: dev
+   includeSelectors: false
+EOF
+kubectl get pod --show-labels
+kubectl get deploy --show-labels
+```
+
+Set the selector to true and the
 
 
 ## Lab Practice
