@@ -160,45 +160,83 @@ kubectl get all
 
 ## Kustomize
 
-kustomize use to apply changes to a set of resources. Filename should be `kustomization.yaml` and can be apply by using `kubectl apply -f kustomization.yaml` To use kustomize, we have to define the resource in the template as below:
+Kustomize is a tool for customizing Kubernetes configurations. It has the following features to manage application configuration files:
+- generating resources from other sources
+- setting cross-cutting fields for resources
+- composing and customizing collections of resources
+
+
+Example below is a Based and Overlays concept. Where we have the based resource in a directory. Then we can have other version derive from that base rosource using kustomize. Let's start by creating the base resource that includes deployment and service
 ```
+mkdir base
+# Create a base/deployment.yaml
+cat <<EOF > base/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-nginx
+spec:
+  selector:
+    matchLabels:
+      run: my-nginx
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        run: my-nginx
+    spec:
+      containers:
+      - name: my-nginx
+        image: nginx
+EOF
+
+# Create a base/service.yaml file
+cat <<EOF > base/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-nginx
+  labels:
+    run: my-nginx
+spec:
+  ports:
+  - port: 80
+    protocol: TCP
+  selector:
+    run: my-nginx
+EOF
+# Create a base/kustomization.yaml
+cat <<EOF > base/kustomization.yaml
 resources:
-  - deployment.yaml
-  - service.yaml
-namePrefix: test-
-commonLabels:
-  environment: testing
+- deployment.yaml
+- service.yaml
+EOF
 ```
 
-The `deployment.yaml` and `service.yaml` will define all other values. Now we apply the kustomize `-k` summarize and apply both deployment and service that stated in the kustomize file
+Once applied the deployment should be created
 ```
-kubectl apply -k .
-```
-
-We can see the pod started
-```
-NAME                                      READY   STATUS    RESTARTS   AGE
-pod/test-nginx-friday20-dd867b57c-5cr24   1/1     Running   0          29s
-pod/test-nginx-friday20-dd867b57c-m6wc2   1/1     Running   0          29s
-pod/test-nginx-friday20-dd867b57c-xhcs6   1/1     Running   0          29s
-
-NAME                          TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
-service/kubernetes            ClusterIP   10.96.0.1        <none>        443/TCP   11m
-service/test-nginx-friday20   ClusterIP   10.107.237.240   <none>        80/TCP    29s
-
-NAME                                  READY   UP-TO-DATE   AVAILABLE   AGE
-deployment.apps/test-nginx-friday20   3/3     3            3           29s
-
-NAME                                            DESIRED   CURRENT   READY   AGE
-replicaset.apps/test-nginx-friday20-dd867b57c   3         3         3       29s
+kubectl apply -k base/
+kubectl get all
 ```
 
-We validate the label, should matched what stated in the kustomize
+We should see the deployment and service created. Now, we create the overlay where we want to derive a new deployment called dev. An overlay directory only consist kustomize file that refers to other kustomization. In this case it should refer to the based kustomize. Let's create the overlay directory
 ```
-controlplane:~/cka/kustomize-demo$ kubectl get deploy --show-labels
-NAME                  READY   UP-TO-DATE   AVAILABLE   AGE     LABELS
-test-nginx-friday20   3/3     3            3           3m11s   environment=testing,k8s-app=nginx-friday20
+mkdir dev
+cat <<EOF > dev/kustomization.yaml
+resources:
+- ../base
+namePrefix: dev-
+EOF
 ```
+
+Let's apply and see the deployement and service
+```
+kubectl apply -k dev/
+kubectl get all
+```
+
+In the overlay kustomize we specify the prefix name. We can modify other values too. Refer to [Kustomize Feature List](https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/#kustomize-feature-list)
+
 
 ## Lab Practice
 
